@@ -1,0 +1,2718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <title>AoS Battle Tracker – Supabase</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    :root{
+      --bg:#0a0a0a;--bg2:#111;--bg3:#181818;--bg4:#222;
+      --gold:#c9a84c;--gold2:#a07830;--gold3:#e8c86a;--goldDim:rgba(201,168,76,.15);
+      --parch:#c4b08a;--parchDim:rgba(196,176,138,.6);
+      --order:#4a90d9;--chaos:#c0392b;--death:#8e44ad;--destr:#27ae60;
+      --red:#e74c3c;--green:#2ecc71;--fury:#e67e22;--rage:#e74c3c;--cp:#3498db;
+      --text:#e8e0d0;--dim:#888070;
+      --bdr:rgba(201,168,76,.25);--bdrBt:rgba(201,168,76,.6);
+      --bnav:68px;--r:10px;
+    }
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia,serif;font-size:16px;overflow:hidden}
+    #app{height:100dvh;max-width:480px;margin:0 auto;display:flex;flex-direction:column;background:var(--bg)}
+    .screen{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(var(--bnav)+220px+env(safe-area-inset-bottom,0px));padding-top:max(env(safe-area-inset-top,0px),24px);-webkit-overflow-scrolling:touch}
+    .screen::-webkit-scrollbar{display:none}
+    .bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;height:var(--bnav);background:#0d0d0d;border-top:1px solid var(--bdr);display:flex;align-items:stretch;z-index:100;padding-bottom:env(safe-area-inset-bottom,0)}
+    .nt{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--dim);font-size:9px;letter-spacing:.04em;text-transform:uppercase;padding:4px 2px;border:none;background:none;font-family:Georgia,serif}
+    .nt.on{color:var(--gold)}
+    .nt svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    .nt.admin-tab{border-left:1px solid var(--bdr);color:var(--gold2)}
+    .nt.admin-tab.on{color:var(--gold3)}
+    .card{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);padding:16px;margin:0 16px 12px}
+    .ct{font-size:11px;letter-spacing:.09em;color:var(--gold);margin-bottom:10px;text-transform:uppercase;font-weight:bold}
+    .btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:13px 18px;border-radius:8px;font-size:13px;letter-spacing:.05em;cursor:pointer;border:none;transition:opacity .15s,transform .1s;min-height:48px;font-family:Georgia,serif;font-weight:bold;width:100%;text-align:center}
+    .btn:active{opacity:.8;transform:scale(.98)}
+    .btn-g{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#0a0a0a}
+    .btn-o{background:transparent;border:1px solid var(--bdr);color:var(--parch)}
+    .btn-d{background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.4);color:var(--red)}
+    .btn-sm{padding:8px 14px;font-size:12px;min-height:40px}
+    .btn-row{display:flex;gap:10px;width:100%}
+    .btn-row .btn{flex:1}
+    .inp{background:var(--bg3);border:1px solid var(--bdr);border-radius:8px;color:var(--text);font-family:Georgia,serif;font-size:16px;padding:13px 16px;width:100%;outline:none;transition:border-color .2s}
+    .inp:focus{border-color:var(--gold)}
+    .inp::placeholder{color:var(--dim)}
+    .lbl{font-size:11px;letter-spacing:.08em;color:var(--parch);text-transform:uppercase;display:block;margin-bottom:6px}
+    .field{margin-bottom:16px}
+    textarea.inp{resize:none}
+    .sh{padding:18px 16px 10px}
+    .st{font-size:20px;color:var(--gold);font-weight:bold}
+    .ss{font-size:14px;color:var(--parchDim);margin-top:3px;font-style:italic}
+    #toast-wrap{position:fixed;bottom:calc(var(--bnav)+10px);left:50%;transform:translateX(-50%);z-index:999;width:calc(100%-32px);max-width:440px;pointer-events:none;display:flex;flex-direction:column;gap:8px}
+    .toast{background:var(--bg3);border:1px solid var(--bdrBt);border-radius:8px;padding:11px 16px;font-size:13px;animation:slideUp .3s;color:var(--gold3);font-weight:bold}
+    .toast.err{border-color:rgba(231,76,60,.6);color:var(--red);background:rgba(20,5,5,.95)}
+    @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:flex-end;justify-content:center}
+    .sheet{background:var(--bg2);border-top:1px solid var(--bdrBt);border-radius:16px 16px 0 0;width:100%;max-width:480px;max-height:80dvh;display:flex;flex-direction:column;animation:shup .25s}
+    @keyframes shup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    .sh-handle{width:40px;height:4px;background:var(--bdr);border-radius:2px;margin:12px auto 0}
+    .sh-head{padding:14px 16px;border-bottom:1px solid var(--bdr);font-size:14px;color:var(--gold);letter-spacing:.06em;font-weight:bold}
+    .sh-body{overflow-y:auto;flex:1}
+    .sh-body::-webkit-scrollbar{display:none}
+    .sh-item{padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;border-bottom:1px solid rgba(201,168,76,.07);font-size:15px}
+    .sh-item:active{background:var(--goldDim)}
+    .sh-item.sel{color:var(--gold)}
+    .sh-foot{padding:12px 16px;border-top:1px solid var(--bdr)}
+    .sr{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(201,168,76,.07);font-size:14px}
+    .sr:last-child{border-bottom:none}
+    .sl{color:var(--parchDim)}
+    .sv{color:var(--gold);font-weight:bold}
+    .badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:bold;letter-spacing:.04em}
+    .manual-badge{background:rgba(231,76,60,.2);color:var(--red);border:1px solid rgba(231,76,60,.4)}
+    .tts-badge{background:rgba(39,174,96,.2);color:var(--destr);border:1px solid rgba(39,174,96,.4)}
+    .draw-badge{background:rgba(201,168,76,.2);color:var(--gold);border:1px solid rgba(201,168,76,.4)}
+    .tournament-badge{background:rgba(74,144,217,.2);color:var(--order);border:1px solid rgba(74,144,217,.4)}
+    .chips{display:flex;gap:8px;overflow-x:auto;padding:8px 16px;flex-wrap:wrap}
+    .chips::-webkit-scrollbar{display:none}
+    .chip{padding:6px 14px;border-radius:20px;font-size:11px;border:1px solid var(--bdr);color:var(--dim);cursor:pointer;white-space:nowrap;background:var(--bg2)}
+    .chip.on{background:var(--goldDim);border-color:var(--gold);color:var(--gold)}
+    .chip.disabled{opacity:.4;cursor:not-allowed}
+    .htabs{display:flex;overflow-x:auto;border-bottom:1px solid var(--bdr);padding:0 16px}
+    .htabs::-webkit-scrollbar{display:none}
+    .htab{padding:10px 16px;font-size:11px;letter-spacing:.06em;color:var(--dim);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px}
+    .htab.on{color:var(--gold);border-bottom-color:var(--gold)}
+    .score-wrap{display:flex;gap:0;padding:8px 16px}
+    .score-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+    .score-name{font-size:16px;letter-spacing:.05em;color:var(--parch);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%;padding:0 4px;font-weight:bold}
+    .score-total{font-size:44px;color:var(--gold);line-height:1;font-weight:bold}
+    .score-round-total{font-size:14px;color:var(--parchDim);margin-top:-4px}
+    .game-track-row{display:flex;align-items:center;gap:6px;padding:4px 0;width:100%}
+    .game-track-label{font-size:10px;color:var(--parchDim);letter-spacing:.04em;text-transform:uppercase;width:48px;text-align:right;flex-shrink:0}
+    .game-track-stepper{display:flex;align-items:center;gap:0}
+    .game-track-btn{width:32px;height:32px;background:var(--bg3);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--gold);font-size:16px;font-weight:bold;user-select:none;border-radius:6px}
+    .game-track-btn:active{background:var(--goldDim)}
+    .game-track-val{width:32px;height:32px;background:var(--bg2);border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;color:var(--text)}
+    .game-track-full{flex:1;min-width:0}
+    .underdog-badge{display:inline-block;background:var(--fury);color:#fff;font-size:8px;padding:2px 6px;border-radius:8px;letter-spacing:.04em;text-transform:uppercase;margin-left:4px}
+    .double-btn{background:var(--bg3);border:2px solid var(--bdr);color:var(--parch);font-size:10px;padding:6px 10px;border-radius:6px;cursor:pointer;text-align:center;min-width:60px;letter-spacing:.04em;text-transform:uppercase;font-weight:bold;transition:all .15s}
+    .double-btn:active{background:var(--goldDim);border-color:var(--gold)}
+    .double-btn.active{background:var(--goldDim);border-color:var(--gold);color:var(--gold)}
+    .tactic-section{margin:6px 0;width:100%}
+    .tactic-header-row{font-size:10px;color:var(--parchDim);letter-spacing:.04em;text-transform:uppercase;text-align:center;margin-bottom:6px}
+    .tactic-item{display:flex;align-items:center;gap:8px;padding:10px 10px;font-size:12px;margin:3px 0;border-radius:6px;color:var(--dim);cursor:pointer;transition:all .15s;min-height:44px}
+    .tactic-item:active{background:rgba(201,168,76,.1)}
+    .tactic-item.done{color:var(--gold);cursor:pointer}
+    .tactic-item.current{border:1px solid var(--gold);color:var(--parch);background:var(--goldDim);cursor:pointer}
+    .tactic-item.locked{opacity:.4;cursor:not-allowed}
+    .tactic-item .tac-dot{width:16px;height:16px;border-radius:50%;flex-shrink:0;border:2px solid var(--bdr);display:flex;align-items:center;justify-content:center}
+    .tactic-item.done .tac-dot{background:var(--gold);border-color:var(--gold)}
+    .tactic-item.done .tac-dot::after{content:'✓';color:#0a0a0a;font-size:10px;font-weight:bold}
+    .tactic-item.current .tac-dot{border-color:var(--gold)}
+    .tactic-item.locked .tac-dot{border-color:var(--dim)}
+    .tactic-item .tac-plus{font-size:10px;color:var(--gold);font-weight:bold;margin-left:auto;flex-shrink:0}
+    .landing-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);padding:14px;margin:0 16px 10px}
+    .landing-card .game-summary{font-size:13px;font-weight:bold;margin-bottom:4px}
+    .landing-card .game-meta{font-size:11px;color:var(--dim)}
+    .landing-actions{display:flex;gap:8px;margin-top:10px}
+    .landing-actions .btn{flex:1;font-size:11px;padding:10px;min-height:40px}
+    .login-wrap{min-height:100dvh;display:flex;flex-direction:column;justify-content:flex-end;padding:24px 24px max(env(safe-area-inset-bottom,0px),24px);background:radial-gradient(ellipse at 50% 25%,rgba(201,168,76,.08) 0%,transparent 65%)}
+    .login-logo{text-align:center;margin-bottom:28px}
+    .login-title{font-size:24px;color:var(--gold);font-weight:bold;line-height:1.3}
+    .login-sub{font-size:14px;color:var(--parchDim);margin-top:6px;font-style:italic}
+    .login-box{background:rgba(10,10,10,.95);border:1px solid var(--bdr);border-radius:16px;padding:22px}
+    .divider{display:flex;align-items:center;gap:12px;margin:14px 0;color:var(--dim);font-size:12px}
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--bdr)}
+    .err-msg{color:var(--red);font-size:13px;margin-bottom:12px;padding:10px 12px;background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.35);border-radius:8px;display:flex;align-items:center;gap:8px}
+    .warn{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.4);border-radius:8px;padding:11px 14px;margin:0 16px 12px;display:flex;gap:10px;align-items:flex-start;font-size:13px;color:#e88;line-height:1.4}
+    .susp{background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.35);color:var(--red);padding:2px 7px;border-radius:4px;font-size:10px}
+    .adm-head{background:linear-gradient(135deg,#1a1000,#0d0d0d);border-bottom:1px solid var(--gold2);padding:18px 16px 12px}
+    .adm-title{font-size:15px;color:var(--gold2);font-weight:bold}
+    .round-dots{display:flex;gap:4px;justify-content:center;margin:6px 0}
+    .rdot{width:30px;height:4px;border-radius:2px;background:var(--bg4)}
+    .rdot.on{background:var(--gold)}
+    .chart-wrap{width:100%;overflow-x:auto}
+    .game-card{cursor:pointer}
+    .gvs{font-size:13px;font-weight:bold}
+    .gscore{font-size:22px;color:var(--gold);font-weight:bold}
+    .faction-check{width:20px;height:20px;border:2px solid var(--bdr);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .faction-check.checked{background:var(--gold);border-color:var(--gold)}
+    .faction-check.checked::after{content:'✓';color:#0a0a0a;font-size:13px;font-weight:bold}
+    .pw-toggle{position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--dim);background:none;border:none;padding:4px;z-index:5}
+    .pw-toggle:hover{color:var(--gold)}
+    .sort-row{display:flex;gap:8px;padding:8px 16px;flex-wrap:wrap;justify-content:center}
+    .sort-chip{padding:5px 12px;border-radius:16px;font-size:10px;letter-spacing:.05em;border:1px solid var(--bdr);color:var(--dim);cursor:pointer;background:var(--bg2);text-transform:uppercase}
+    .sort-chip.on{background:var(--goldDim);border-color:var(--gold);color:var(--gold)}
+    .user-banner{text-align:center;padding:0 16px 4px;font-size:20px;color:var(--gold);font-weight:bold;letter-spacing:.06em}
+    .user-banner-sub{text-align:center;font-size:12px;color:var(--parchDim);margin-bottom:4px;font-style:italic}
+    .stats-toggle{display:flex;gap:8px;padding:8px 0}
+    .stats-toggle-btn{flex:1;padding:8px;border-radius:20px;font-size:11px;border:1px solid var(--bdr);color:var(--dim);cursor:pointer;text-align:center;background:var(--bg2);letter-spacing:.05em;text-transform:uppercase}
+    .stats-toggle-btn.on{background:var(--goldDim);border-color:var(--gold);color:var(--gold)}
+    .dash-summary{display:flex;gap:8px;padding:0 0 12px}
+    .dash-summary-item{flex:1;text-align:center;padding:10px 6px;background:var(--bg3);border-radius:8px;border:1px solid var(--bdr)}
+    .dash-summary-val{font-size:20px;color:var(--gold);font-weight:bold}
+    .dash-summary-lbl{font-size:9px;color:var(--parchDim);letter-spacing:.04em;text-transform:uppercase;margin-top:2px}
+    .fury-color{color:var(--fury)}
+    .rage-color{color:var(--rage)}
+    .cp-color{color:var(--cp)}
+    select.tac-select{background:var(--bg3);color:var(--text);border:1px solid var(--bdr);border-radius:8px;font-family:Georgia,serif;font-size:13px;padding:10px 12px;width:100%;min-height:42px}
+    select.tac-select:focus{border-color:var(--gold);outline:none}
+    select.tac-select option:disabled{color:var(--dim);font-style:italic}
+    .tactic-container{display:flex;flex-direction:column;gap:6px;width:100%;min-height:120px}
+    .tactic-card{background:var(--bg3);border:1px solid var(--bdr);border-radius:6px;padding:8px 10px;flex:1;min-height:110px;display:flex;flex-direction:column}
+    .tactic-card .tac-name{font-size:11px;color:var(--parch);font-weight:bold;margin-bottom:4px;letter-spacing:.04em}
+    .tactic-card .tac-sub{font-size:11px;color:var(--dim);padding:3px 0 3px 16px;display:flex;align-items:center;gap:6px}
+    .tactic-card .tac-sub.done{color:var(--gold)}
+    .tactic-card .tac-sub.current{color:var(--parch);border-left:2px solid var(--gold);padding-left:14px}
+    .tactic-card .tac-sub.locked{opacity:.4}
+    .tactic-card .tac-sub .tac-dot-sm{width:12px;height:12px;border-radius:50%;flex-shrink:0;border:2px solid var(--bdr);display:inline-flex;align-items:center;justify-content:center}
+    .tactic-card .tac-sub.done .tac-dot-sm{background:var(--gold);border-color:var(--gold)}
+    .tactic-card .tac-sub.done .tac-dot-sm::after{content:'✓';color:#0a0a0a;font-size:8px;font-weight:bold}
+    .tactic-card .tac-sub.current .tac-dot-sm{border-color:var(--gold)}
+    .tactic-card .tac-sub.locked .tac-dot-sm{border-color:var(--dim)}
+    .tactic-card .tac-sub .tac-plus-sm{font-size:9px;color:var(--gold);font-weight:bold;margin-left:auto;flex-shrink:0}
+    .resource-block{width:100%;margin-top:4px;padding-top:6px;border-top:1px solid var(--bdr)}
+    .resource-block .game-track-row .game-track-label{color:var(--parchDim)}
+    .resource-block .game-track-row .game-track-val{color:var(--text)}
+    .resource-block .game-track-row .game-track-btn{color:var(--gold)}
+    .faction-tracker-block{width:100%;margin-top:2px;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg3);min-height:70px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;flex:1}
+    .faction-tracker-block .tracker-label{font-size:9px;letter-spacing:.04em;text-transform:uppercase;font-weight:bold;text-align:center;margin-bottom:4px}
+    .faction-tracker-block .ft-row{display:flex;align-items:center;gap:4px;padding:2px 0;width:100%;flex-wrap:wrap}
+    .faction-tracker-block .ft-row .ft-label{font-size:9px;color:var(--parchDim);letter-spacing:.04em;text-transform:uppercase;flex-shrink:0;min-width:30px}
+    .faction-tracker-block .ft-row .ft-btn{width:22px;height:22px;background:var(--bg3);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--gold);font-size:12px;font-weight:bold;user-select:none;border-radius:3px}
+    .faction-tracker-block .ft-row .ft-btn:active{background:var(--goldDim)}
+    .faction-tracker-block .ft-row .ft-val{width:24px;height:22px;background:var(--bg2);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;color:var(--gold);border-radius:3px}
+    .faction-tracker-block .bm-desc{font-size:9px;color:var(--parchDim);font-style:italic;padding:2px 0 0 2px;line-height:1.4}
+    .tracker-flex-container{display:flex;gap:8px;width:100%;align-items:stretch;margin-top:2px}
+    .tracker-flex-container .faction-tracker-block{flex:1;margin-top:0}
+    .check-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+    .check-row label{font-size:12px;color:var(--parch);display:flex;align-items:center;gap:6px;cursor:pointer}
+    .check-row input[type="checkbox"]{width:18px;height:18px;accent-color:var(--gold);cursor:pointer}
+    .tts-note{font-size:10px;color:var(--parchDim);font-style:italic;margin-top:2px;padding-left:26px}
+    .stats-data-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+    .stats-data-grid .stat-item{background:var(--bg3);border:1px solid var(--bdr);border-radius:6px;padding:10px 8px;text-align:center}
+    .stats-data-grid .stat-item .stat-val{font-size:20px;color:var(--gold);font-weight:bold}
+    .stats-data-grid .stat-item .stat-lbl{font-size:9px;color:var(--parchDim);letter-spacing:.04em;text-transform:uppercase;margin-top:2px}
+    .ft-check{display:inline-block;padding:4px 8px;font-size:10px;border:1px solid var(--bdr);border-radius:4px;cursor:pointer;background:var(--bg3);transition:all .15s;user-select:none}
+    .ft-check.used{background:var(--goldDim);border-color:var(--gold);color:var(--gold)}
+    .ft-check .ft-dot{display:inline-block;width:8px;height:8px;border-radius:50%;border:1px solid var(--dim);margin-right:4px}
+    .ft-check.used .ft-dot{background:var(--gold);border-color:var(--gold)}
+    .ft-check.disabled{opacity:0.4;cursor:not-allowed}
+    .khorne-tree .khorne-ability{padding:4px 8px;margin:4px 0;border-radius:4px;font-size:11px;transition:all .15s;cursor:default}
+    .khorne-tree .khorne-ability.unlocked{background:var(--goldDim);border:2px solid var(--gold);color:var(--gold);font-weight:bold}
+    .khorne-tree .khorne-ability.available{background:var(--bg3);border:1px solid var(--bdr);color:var(--parch);cursor:pointer}
+    .khorne-tree .khorne-ability.available:hover{background:var(--goldDim);border-color:var(--gold)}
+    .khorne-tree .khorne-ability.locked{background:var(--bg3);border:1px solid var(--bdr);color:var(--dim);opacity:.4;cursor:not-allowed}
+    .khorne-tree .khorne-ability .khorne-status{font-size:8px;color:var(--parchDim);margin-left:6px}
+    .khorne-tree .khorne-ability.unlocked .khorne-status{color:var(--gold)}
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast-wrap"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+(function() {
+  'use strict';
+
+  const SUPABASE_URL = 'https://sencacbhmgbjzfyeviph.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_vi1572dhb06hMy4CAAscKw_suIsLGqh';
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  function getInputValue(bind) {
+    const el = document.querySelector('[data-bind="' + bind + '"]');
+    return el ? el.value : '';
+  }
+
+  const CONFIG = {
+    MAX_ROUNDS: 5, MIN_ROUNDS_TO_END: 3,
+    SCORE: { PRIMARY_MAX: 10, PRIMARY_STEP: 1 },
+    SPECIAL_USERS: { ANCIENT: '__ancient__', GUEST: '__guest__', ADMIN: 'admin' },
+    NON_USERS: ['__ancient__', '__guest__', 'admin'],
+    BATTLE_PLANS: ['Into the Fire','Bloodstained Coasts','Avalanche of Ash','Caverns of Slaughter',"What's Yours Is Ours",'Hidden Under Ash-Clouds','Warped Ruins','Curse of the Gnaw','Seize the Embers','Treacherous Ground','Escape from the Coast','Power of the Realms'],
+    FURY_MAX: 7, STARTING_CP: 4, UNDERDOG_CP: 5,
+    BATTLE_TACTICS: [
+      { name: 'Blazing Onslaught', subs: ['Affray: Master of Arms','Strike: Break Their Defences','Domination: No Survivors'] },
+      { name: 'Siege of Ashes', subs: ['Affray: Form a Wall','Strike: Outpost Resupply','Domination: Repel the Attackers'] },
+      { name: 'Flanking Firestorm', subs: ['Affray: Ambuscade','Strike: Surround the Enemy','Domination: Claim What\'s Yours'] },
+      { name: 'Smokescreen', subs: ['Affray: Keep the Enemy Close','Strike: Feign Weakness','Domination: Execute the Plan'] },
+      { name: 'Burning for Vengeance', subs: ['Affray: Search Every Inch','Strike: Quick Pursuit','Domination: Bring Them In'] },
+      { name: 'Legend of the Parch', subs: ['Affray: Daring Rescue','Strike: Command from the Front','Domination: Hero of Legend'] }
+    ],
+    BAD_MOON_FACES: ['Cacklin\'', 'Grinnin\'', 'Scowlin\'', 'Sulkin\''],
+    BAD_MOON_DESCS: [
+      '+5 Control non-SQUIG MOONCLAN · SPIDERFANG crit 5+ · GITMOB charge&shoot after retreat',
+      '+5 Control non-SQUIG MOONCLAN · SPIDERFANG crit 5+ · TROGGOTH -1 Rend from enemy attacks',
+      'TROGGOTH -1 Rend from enemy attacks · SQUIG Move=4',
+      'SQUIG Move=4 · GITMOB charge&shoot after retreat'
+    ],
+    DIRTY_TRICKS_LIST: ['Venom-Enc. Weapons', 'Sneaky Sneakin\'', 'Lethal Surprise', 'Noisy Racket', 'Disapp. Act'],
+    DELUSIONS_LIST: ['A Glorious Banquet', 'A Splendid Pageant', 'A Noble Feast', 'A Royal Hunt'],
+  };
+
+  const RUNE_DATA = {
+    strength: {
+      name: 'Varinor – Rune of Strength',
+      base: '+1 to run & charge rolls',
+      enhanced: {
+        river: '+1 to wound for combat attacks',
+        wind: 'Can Shoot & Charge after Retreating'
+      }
+    },
+    river: {
+      name: 'Ydriiliqi – Rune of the River',
+      base: 'Enemy units within 12" get -2 to charge',
+      enhanced: {
+        mountain: 'Ignore negative modifiers to hit/wound',
+        wind: 'Move up to 3" (pass through combat)'
+      }
+    },
+    wind: {
+      name: 'Oreali – Rune of the Wind',
+      base: 'Enemy attacks targeting targets in combat get -1 to hit',
+      enhanced: {
+        strength: '+4" Move',
+        mountain: '+5 Control'
+      }
+    },
+    mountain: {
+      name: 'Alaithi – Rune of the Mountain',
+      base: 'Each target rolls for an enemy unit in combat (damage)',
+      enhanced: {
+        river: 'Ignore negative modifiers to hit/wound',
+        wind: 'Move up to 3" (pass through combat)'
+      }
+    }
+  };
+
+  const KHORNE_TREE = {
+    murderlust: { id: 'murderlust', name: 'Murderlust', cost: 0, parents: [], desc: 'Roll extra charge die, suffer D3 mortals' },
+    divine_scorn: { id: 'divine_scorn', name: 'Divine Scorn', cost: 1, parents: ['murderlust'], desc: 'Weakens wizards/priests near Khorne units' },
+    punish_pacifist: { id: 'punish_pacifist', name: 'Punish the Pacifist', cost: 1, parents: ['murderlust'], desc: 'Harms units that avoided combat' },
+    murder_mystic: { id: 'murder_mystic', name: 'Murder the Mystic', cost: 2, parents: ['divine_scorn'], desc: 'Deal with Manifestations' },
+    revel: { id: 'revel', name: 'Revel in Battle', cost: 2, parents: ['punish_pacifist'], desc: 'Cancel enemy weapon abilities' },
+    glorious: { id: 'glorious', name: 'Glorious Combat or Naught', cost: 3, parents: ['divine_scorn', 'punish_pacifist'], desc: 'A unit that kills something gains...' },
+    slaughter: { id: 'slaughter', name: 'Slaughter Triumphant', cost: 3, parents: ['murder_mystic', 'glorious'], desc: '+1 Attack on charge' },
+    cleave: { id: 'cleave', name: 'Cleave Wide the Grin of Khorne', cost: 4, parents: ['glorious', 'revel'], desc: '+1 to hit in combat' }
+  };
+  const KHORNE_ORDER = ['murderlust','divine_scorn','punish_pacifist','murder_mystic','revel','glorious','slaughter','cleave'];
+
+  const FACTIONS={Order:['Cities of Sigmar','Daughters of Khaine','Fyreslayers','Idoneth Deepkin','Kharadron Overlords','Lumineth Realm-lords','Seraphon','Stormcast Eternals','Sylvaneth'],Chaos:['Blades of Khorne','Disciples of Tzeentch','Helsmiths of Hashut','Hedonites of Slaanesh','Maggotkin of Nurgle','Skaven','Slaves to Darkness'],Death:['Flesh-Eater Courts','Nighthaunt','Ossiarch Bonereapers','Soulblight Gravelords'],Destruction:['Gloomspite Gitz','Ironjawz','Kruleboyz','Ogor Mawtribes','Sons of Behemat']};
+  const GAC={Order:'#4a90d9',Chaos:'#c0392b',Death:'#8e44ad',Destruction:'#27ae60'};
+  const ALL_F=Object.entries(FACTIONS).flatMap(([ga,fs])=>fs.map(f=>({name:f,ga})));
+  const gaFor=f=>ALL_F.find(x=>x.name===f)?.ga||'Order';
+  const gaColor=ga=>GAC[ga]||'#888070';
+  const getGAColorForFaction=f=>gaColor(gaFor(f));
+
+  const FACTION_TRACKERS = {
+    'Ossiarch Bonereapers': { type: 'rdp', label: 'RDP', max: 9999 },
+    'Flesh-Eater Courts': { type: 'delusions', label: 'Delusions' },
+    'Soulblight Gravelords': null,
+    'Nighthaunt': null,
+    'Gloomspite Gitz': { type: 'badmoon', label: 'Bad Moon' },
+    'Ironjawz': null,
+    'Kruleboyz': { type: 'dirtytricks', label: 'Dirty Tricks' },
+    'Ogor Mawtribes': null,
+    'Sons of Behemat': null,
+    'Blades of Khorne': { type: 'khorne', label: 'Blood Tithe' },
+    'Disciples of Tzeentch': { type: 'rdp', label: 'Fate Points', max: 9999, persist: true },
+    'Helsmiths of Hashut': { type: 'rdp', label: 'Demonic Power Points', max: 9999, persist: true },
+    'Hedonites of Slaanesh': null,
+    'Maggotkin of Nurgle': null,
+    'Skaven': null,
+    'Slaves to Darkness': { type: 'rdp', label: 'Dark Apotheosis Points', max: 8, persist: true },
+    'Idoneth Deepkin': { type: 'tides', label: 'Tides of Death' },
+    'Sylvaneth': { type: 'sylvaneth', label: 'Overgrown Tokens', max: 12, persist: true },
+    'Lumineth Realm-lords': { type: 'lumineth', label: 'Rune Scripture' },
+    'Daughters of Khaine': { type: 'dok_simple', label: 'Blessings', persist: true }
+  };
+  function getTracker(faction) { return FACTION_TRACKERS[faction] || null; }
+
+  function getSylvanethRange(val){
+    if (val <= 2) return '6"';
+    else if (val <= 5) return '9"';
+    else if (val <= 8) return '12"';
+    else return 'Whole battlefield';
+  }
+
+  const ICON={swords:'<path d="M14.5 17.5L3 6V3h3l11.5 11.5M14.5 17.5l2 2.5M7 7l-1 1M21 3l-9 9M9 15L3 21"/>',shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',chart:'<rect x="18" y="3" width="3" height="18"/><rect x="10.5" y="8" width="3" height="13"/><rect x="3" y="13" width="3" height="8"/>',trophy:'<path d="M6 9H4a2 2 0 01-2-2V5h4M18 9h2a2 2 0 002-2V5h-4"/><path d="M8 21h10M12 17v4M7 4h10v7a5 5 0 01-10 0V4z"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>',crown:'<path d="M2 20h20M5 20l2-10 5 5 5-7 2 12"/><circle cx="12" cy="8" r="1" fill="currentColor"/>',logout:'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>',check:'<path d="M20 6L9 17l-5-5"/>',trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/>',edit:'<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>',lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>',eye:'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',eyeoff:'<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22"/>',refresh:'<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>',chevdown:'<polyline points="6 9 12 15 18 9"/>',chevleft:'<polyline points="15 18 9 12 15 6"/>',chevright:'<polyline points="9 18 15 12 9 6"/>',alert:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'};
+  const ic=(n,sz=20,col='currentColor')=>`<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="${col}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICON[n]||''}</svg>`;
+
+  function dname(u,g){if(u===CONFIG.SPECIAL_USERS.ANCIENT)return'The Ancient Enemy';if(u===CONFIG.SPECIAL_USERS.GUEST)return g?.guestName||'Guest Player';if(u === '__deleted__') { const dn = g?.displayName1 || g?.displayName2 || 'Deleted User'; return dn + ' (deleted)'; } return u;}
+  function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+  function toast(m,e){const w=document.getElementById('toast-wrap');if(!w)return;const d=document.createElement('div');d.className='toast'+(e?' err':'');d.textContent=m;w.appendChild(d);setTimeout(()=>{d.style.opacity='0';d.style.transition='opacity .3s';setTimeout(()=>d.remove(),300);},3000);}
+
+  const UI={sectionHeader(t,s){return`<div class="sh"><div class="st">${esc(t)}</div>${s?`<div class="ss">${esc(s)}</div>`:''}</div>`;},card(t,c){return`<div class="card"><div class="ct">${esc(t)}</div>${c}</div>`;},errorMessage(m){return m?`<div class="err-msg">${ic('alert',16,'var(--red)')} ${esc(m)}</div>`:'';},warning(m,a){return`<div class="warn">${ic('warn',16)} ${m}${a||''}</div>`;},statRow(l,v){return`<div class="sr"><span class="sl">${esc(l)}</span><span class="sv">${esc(String(v))}</span></div>`;},factionBadge(ga){if(!ga)return'';const c=gaColor(ga);return`<span class="badge" style="background:${c}22;color:${c};border:1px solid ${c}44;font-size:9px">${esc(ga)}</span>`;},chips(items,cur){return`<div class="chips">${items.map(i=>`<div class="chip${cur===i.value?' on':''}${i.disabled?' disabled':''}" onclick="${i.disabled?'':i.onclick}">${esc(i.label)}</div>`).join('')}</div>`;},sortChips(items,cur,pre){return`<div class="sort-row">${items.map(i=>`<div class="sort-chip${cur===i.value?' on':''}" onclick="${pre}('${i.value}')">${esc(i.label)}</div>`).join('')}</div>`;},tabRow(tabs,cur,pre){return`<div class="htabs">${tabs.map((t,i)=>`<div class="htab${cur===i?' on':''}" onclick="${pre}(${i})">${esc(t)}</div>`).join('')}</div>`;},formField(l,i){return`<div class="field"><label class="lbl">${esc(l)}</label>${i}</div>`;},textInput: function(bind, o = {}) {
+  const { type = 'text', placeholder = '', enterAction = '', value = '', oninput = '' } = o;
+  return `<input class="inp" data-bind="${bind}" type="${type}" placeholder="${esc(placeholder)}" value="${esc(value)}" ${enterAction ? `data-enter="${enterAction}"` : ''} ${oninput ? `oninput="${oninput}"` : ''} autocomplete="off">`;
+},passwordInput: function(bind, o = {}) {
+  const { placeholder = '••••••••', enterAction = '', value = '', oninput = '' } = o;
+  const id = 'pw-'+bind.replace(/\./g,'-');
+  return `<div style="position:relative"><input class="inp" id="${id}" data-bind="${bind}" type="password" placeholder="${esc(placeholder)}" value="${esc(value)}" ${enterAction ? `data-enter="${enterAction}"` : ''} ${oninput ? `oninput="${oninput}"` : ''} autocomplete="off" style="padding-right:44px"><button type="button" class="pw-toggle" data-pw-toggle="${id}" onclick="UI.togglePassword('${id}')" tabindex="-1">${ic('eye',16)}</button></div>`;
+},togglePassword(id){const i=document.getElementById(id);if(!i)return;const p=i.type==='password';i.type=p?'text':'password';i.focus();const b=document.querySelector(`[data-pw-toggle="${id}"]`);if(b)b.innerHTML=ic(p?'eyeoff':'eye',16);},emptyState(m){return`<div class="card" style="text-align:center;color:var(--dim);font-style:italic">${esc(m)}</div>`;},resourceStepper(bind,value,o={}){const{min=0,max=99,step=1,color='var(--gold)',label=''}=o;return`<div class="game-track-row"><span class="game-track-label" style="color:${color}">${esc(label)}</span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjResourceDOM('${bind}',${-step},${min},${max})">−</div><div class="game-track-val" id="res-${bind}" style="color:${color}">${value}</div><div class="game-track-btn" onclick="Actions.adjResourceDOM('${bind}',${step},${min},${max})">+</div></div></div>`;},vpStepper(bind,v,o={}){const{step=1,label='',max=99}=o;return`<div class="game-track-row"><span class="game-track-label" style="width:52px">${esc(label)}</span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjStepperDOM('${bind}',${-step},${max})">−</div><div class="game-track-val" id="vp-${bind.replace(/\./g,'-')}">${v}</div><div class="game-track-btn" onclick="Actions.adjStepperDOM('${bind}',${step},${max})">+</div></div><div class="game-track-full"></div></div>`;},factionDropdown(bind,currentVal){let opts='<option value="">Select faction</option>';Object.entries(FACTIONS).forEach(([ga,fs])=>{opts+=`<optgroup label="${ga}">`;fs.forEach(f=>{opts+=`<option value="${esc(f)}" ${currentVal===f?'selected':''}>${esc(f)}</option>`;});opts+='</optgroup>';});return`<select class="tac-select" onchange="S.${bind}=this.value">${opts}</select>`;},scenarioDropdown(bind,currentVal){let opts='<option value="">Select battle plan</option>';CONFIG.BATTLE_PLANS.forEach(p=>{opts+=`<option value="${esc(p)}" ${currentVal===p?'selected':''}>${esc(p)}</option>`;});return`<select class="tac-select" onchange="S.${bind}=this.value">${opts}</select>`;},spacer:(h=120)=>`<div style="height:${h}px;width:100%;"></div>`};
+
+  const TacticManager={getBestProgress(player,tacticIdx,upToRound){let best=-1;for(let r=0;r<=upToRound;r++){const rProg=S.battle.tacticProgress[r]?(S.battle.tacticProgress[r][player]||{}):{};if(rProg[tacticIdx]!==undefined&&rProg[tacticIdx]>best)best=rProg[tacticIdx];}return best;},hasNewSubThisRound(player,tacticIdx,roundKey){const curProg=S.battle.tacticProgress[roundKey]?(S.battle.tacticProgress[roundKey][player]||{}):{};const prevProg=S.battle.tacticProgress[roundKey-1]?(S.battle.tacticProgress[roundKey-1][player]||{}):{};const cur=curProg[tacticIdx]!==undefined?curProg[tacticIdx]:-1;const prev=prevProg[tacticIdx]!==undefined?prevProg[tacticIdx]:-1;return cur>prev;},canSelectSub(player,tacticIdx,subIdx,roundKey){const best=this.getBestProgress(player,tacticIdx,roundKey);if(subIdx!==best+1)return false;return!this.hasNewSubThisRound(player,tacticIdx,roundKey);},canDeselectSub(player,tacticIdx,subIdx,roundKey){const best=this.getBestProgress(player,tacticIdx,roundKey);if(subIdx!==best||subIdx<0)return false;return this.hasNewSubThisRound(player,tacticIdx,roundKey);},getCurrentProgress(player,roundKey){const progress={};for(let r=0;r<=roundKey;r++){const rProg=S.battle.tacticProgress[r]?(S.battle.tacticProgress[r][player]||{}):{};for(let ti in rProg){if(progress[ti]===undefined||rProg[ti]>progress[ti])progress[ti]=rProg[ti];}}return progress;}};
+
+  function defaultRound(){
+    return {
+      vp1:0, vp2:0, p1:0, t1:0, p2:0, t2:0,
+      p1ft: {
+        track: null, step: 0, active:null, value:0, used:[], roll:null, mustChange:false, previous:0, resetUsed:false,
+        activeBlessings: [],
+        addedThisRound: []
+      },
+      p2ft: {
+        track: null, step: 0, active:null, value:0, used:[], roll:null, mustChange:false, previous:0, resetUsed:false,
+        activeBlessings: [],
+        addedThisRound: []
+      }
+    };
+  }
+
+  async function loadProfile(username) {
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .eq('username', username)
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  async function saveProfile(profile) {
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .upsert(profile)
+      .select();
+    if (error) throw error;
+    return data?.[0];
+  }
+
+  async function loadGamesForUser(username) {
+    const { data, error } = await supabaseClient
+      .from('games')
+      .select('*')
+      .or(`player1.eq.${username},player2.eq.${username}`);
+    if (error) throw error;
+    return data || [];
+  }
+
+  async function saveGame(game) {
+    const { data, error } = await supabaseClient
+      .from('games')
+      .upsert(game)
+      .select();
+    if (error) throw error;
+    return data?.[0];
+  }
+
+  async function deleteGame(id) {
+    const { error } = await supabaseClient
+      .from('games')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+  }
+
+  async function loadDraft(username) {
+    const { data, error } = await supabaseClient
+      .from('drafts')
+      .select('draft_data')
+      .eq('username', username)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data ? data.draft_data : null;
+  }
+
+  async function saveDraft(username, draftData) {
+    const { error } = await supabaseClient
+      .from('drafts')
+      .upsert({ username, draft_data: draftData, updated_at: new Date().toISOString() });
+    if (error) throw error;
+  }
+
+  async function deleteDraft(username) {
+    const { error } = await supabaseClient
+      .from('drafts')
+      .delete()
+      .eq('username', username);
+    if (error) throw error;
+  }
+
+  function usernameToEmail(username) {
+    return username.trim() + '@aos-tracker.com';
+  }
+
+  async function signIn(username, password) {
+    const email = usernameToEmail(username);
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return data.user;
+  }
+
+  async function signUp(username, password, profileData) {
+    const trimmed = username.trim();
+    if (!trimmed) throw new Error('Username is required.');
+    const email = trimmed + '@aos-tracker.com';
+    toast('Signing up with: ' + email);
+    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+    if (error) throw new Error('Registration failed: ' + error.message);
+    const profile = {
+      id: data.user.id,
+      username: trimmed,
+      display_name: profileData.displayName || trimmed,
+      factions: profileData.factions || [],
+      is_admin: false,
+      is_suspended: false,
+      joined_at: new Date().toISOString(),
+      games_played: 0,
+      wins: 0,
+      draws: 0,
+    };
+    const { error: profileError } = await supabaseClient.from('profiles').insert(profile);
+    if (profileError) throw new Error('Profile creation failed: ' + profileError.message);
+    return data.user;
+  }
+
+  async function signOut() {
+    await supabaseClient.auth.signOut();
+  }
+
+  // ─── GLOBAL STATE ──────────────────────────────────────────────────
+  const S = {
+    auth: { session: null, loginUser: '', loginPw: '', loginError: '', loginMode: 'login' },
+    register: { user: '', pw: '', conf: '', factions: [], error: '' },
+    nav: { tab: 0, currentScreen: 'login' },
+    landing: { manualOpen: false, manualVP1: '', manualVP2: '', manualWinner: '', manualNotes: '', manualF1: '', manualF2: '', manualOpp: '', manualScen: '', manualTTS: false, manualTournament: false, opponentSheetOpen: false, guestOpen: false, guestInput: '', manualP1Tactics: [-1,-1], manualP2Tactics: [-1,-1] },
+    battle: {
+      step: 0, opponent: null, faction1: '', faction2: '', scenario: '', rounds: [], currentRound: 0, winner: null, notes: '',
+      opponentSheetOpen: false, guestOpen: false, guestInput: '',
+      p1Tactics: [-1,-1], p2Tactics: [-1,-1], tacticProgress: {},
+      resources: { p1fury:0, p1rage:0, p1cp: CONFIG.STARTING_CP, p2fury:0, p2rage:0, p2cp: CONFIG.STARTING_CP },
+      underdog: null, doubleTurn: null, manualUnderdog: false,
+      _cumulative: null, _underdogCache: null,
+      setupError: '', useFactionTrackers: true, isTTS: false, isTournament: false, firstEntry: true,
+      khorne: { p1: { points:0, unlocked:[] }, p2: { points:0, unlocked:[] } },
+      lumineth: { p1: { scripture: { strength:0, river:0, wind:0, mountain:0 }, extraRune: false, extraUsed: false }, p2: { scripture: { strength:0, river:0, wind:0, mountain:0 }, extraRune: false, extraUsed: false } },
+      tideState: { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } },
+      _prevTideState: { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } }
+    },
+    ui: {
+      factionPickerFor: null, factionSearch: '', dashFilter: 'all', expandedGame: null,
+      statsTab: 0, statsMode: 'wins', statsFactionFilter: 'all', statsTTSFilter: 'all', statsTournamentFilter: 'all', statsDatePreset: '3m',
+      modal: null, lbUsers: [], lbSort: 'wins', lbTournamentFilter: 'all',
+      modifyGameOpen: false, modifyGameId: null, modifyVP1: '', modifyVP2: '', modifyWinner: '', modifyNotes: '', modifyTTS: false, modifyTournament: false,
+      draftExists: false, activeBattleNoticeShown: false,
+      loading: true
+    },
+    profile: { name: '', factions: [], init: false, curPw: '', newPw: '', conf: '', delConf: '', showDel: false },
+    admin: { tab: 0, expandedUser: null, resetTarget: null, resetPw: '', editTarget: null, editName: '', confDel: null, delInput: '', confDelGameId: null, newPw: '', confPw: '', name: '', nameInit: false, exportUser: 'all' },
+    _allUsers: {},
+    _allGames: []
+  };
+
+  // Make S globally accessible so oninput can update it
+  window.S = S;
+
+  const DataCache = {
+    get users() { return S._allUsers; },
+    get games() { return S._allGames; },
+    user(un) { return this.users[un] || null; },
+    invalidate() { /* no-op */ }
+  };
+
+  // ─── ACTIONS ────────────────────────────────────────────────────────
+  const Actions = {
+    goToTab: function(i) {
+      if (i === 1 && S.battle.step !== 0) {
+        if (!S.ui.activeBattleNoticeShown) {
+          toast('Cannot start a new record while one is in progress. Return to Home.', false);
+          S.ui.activeBattleNoticeShown = true;
+          setTimeout(() => { S.ui.activeBattleNoticeShown = false; }, 4000);
+        }
+        S.nav.tab = 0;
+        S.nav.currentScreen = null;
+        render(true);
+        return;
+      }
+      S.nav.tab = i;
+      if (i === 1 && S.auth.session) {
+        const f = DataCache.user(S.auth.session.username);
+        if (f) { S.auth.session = f; S.profile.name = f.displayName || f.username; S.profile.factions = [...f.factions]; }
+      }
+      if (!S.profile.init && S.auth.session) {
+        S.profile.name = S.auth.session.displayName || S.auth.session.username;
+        S.profile.factions = [...S.auth.session.factions];
+        S.profile.init = true;
+      }
+      if (i === 1 && !S.battle.faction1 && S.auth.session && S.auth.session.factions && S.auth.session.factions.length > 0) {
+        S.battle.faction1 = S.auth.session.factions[0];
+      }
+      S.nav.currentScreen = null;
+      if (i === 1 && S.battle.step === 0) { S.battle.firstEntry = true; render(true, 0); } else { render(true); }
+    },
+
+    switchLoginMode: function() {
+      S.auth.loginMode = S.auth.loginMode === 'login' ? 'register' : 'login';
+      S.auth.loginError = '';
+      S.register.error = '';
+      S.nav.currentScreen = null;
+      render(true);
+    },
+
+    login: async function() {
+      const username = getInputValue('auth.loginUser') || S.auth.loginUser;
+      const password = getInputValue('auth.loginPw') || S.auth.loginPw;
+      if (!username || !password) { S.auth.loginError = 'Please enter username and password.'; render(true); return; }
+      try {
+        const user = await signIn(username, password);
+        const profile = await loadProfile(username);
+        if (profile) {
+          const session = {
+            username: profile.username,
+            displayName: profile.display_name,
+            factions: profile.factions || [],
+            isAdmin: profile.is_admin,
+            isSuspended: profile.is_suspended,
+            joinedAt: profile.joined_at,
+            gamesPlayed: profile.games_played,
+            wins: profile.wins,
+            draws: profile.draws,
+          };
+          S.auth.session = session;
+          S.auth.loginPw = '';
+          S.auth.loginError = '';
+          if (!S.admin.nameInit) { S.admin.name = session.displayName || session.username; S.admin.nameInit = true; }
+          S.profile.name = session.displayName || session.username;
+          S.profile.factions = [...session.factions];
+          S.profile.init = true;
+          if (!S.battle.faction1 && session.factions && session.factions.length > 0) S.battle.faction1 = session.factions[0];
+          await loadAllData();
+          S.ui.loading = false;
+          S.nav.currentScreen = null;
+          render(true);
+        } else {
+          S.auth.loginError = 'Profile not found.';
+          render(true);
+        }
+      } catch (e) {
+        S.auth.loginError = e.message || 'Login failed.';
+        render(true);
+      }
+    },
+
+    register: async function() {
+  const username = getInputValue('register.user') || S.register.user;
+  const password = getInputValue('register.pw') || S.register.pw;
+  const confirm = getInputValue('register.conf') || S.register.conf;
+  if (!username) { S.register.error = 'Username required.'; render(true); return; }
+  if (!password || password.length < 6) { S.register.error = 'Password must be at least 6 characters.'; render(true); return; }
+  if (password !== confirm) { S.register.error = "Passwords don't match."; render(true); return; }
+  try {
+    await signUp(username, password, {
+      displayName: username,
+      factions: S.register.factions || []
+    });
+    // Sign out to return to the login screen
+    await signOut();
+    S.auth.session = null;
+    S.register.user = '';
+    S.register.pw = '';
+    S.register.conf = '';
+    S.register.factions = [];
+    S.register.error = '';
+    S.auth.loginMode = 'login';
+    toast('Account created! Please log in.');
+    render(true);
+  } catch (e) {
+    S.register.error = e.message || 'Registration failed. Please try a different username.';
+    render(true);
+  }
+},
+
+    logout: async function() {
+      await signOut();
+      S.auth.session = null;
+      S.nav.tab = 0;
+      S.auth.loginPw = '';
+      S.auth.loginError = '';
+      S.admin.nameInit = false;
+      S.profile.init = false;
+      S._allUsers = {};
+      S._allGames = [];
+      S.nav.currentScreen = null;
+      render(true);
+    },
+
+    openModifyGame: function(id) {
+      S.ui.modifyGameOpen = true;
+      S.ui.modifyGameId = id;
+      const g = DataCache.games.find(g => g.id === id);
+      if (g) {
+        S.ui.modifyVP1 = String(g.totalVP1);
+        S.ui.modifyVP2 = String(g.totalVP2);
+        S.ui.modifyWinner = g.winner;
+        S.ui.modifyNotes = g.notes || '';
+        S.ui.modifyTTS = g.isTTS || false;
+        S.ui.modifyTournament = g.isTournament || false;
+      }
+      render(true);
+    },
+    closeModifyGame: function() { S.ui.modifyGameOpen = false; S.ui.modifyGameId = null; render(true); },
+
+    saveModifiedGame: async function() {
+      const g = DataCache.games.find(g => g.id === S.ui.modifyGameId);
+      if (!g) return;
+      g.totalVP1 = parseInt(S.ui.modifyVP1) || 0;
+      g.totalVP2 = parseInt(S.ui.modifyVP2) || 0;
+      g.winner = S.ui.modifyWinner;
+      g.notes = S.ui.modifyNotes;
+      g.manuallyUpdated = true;
+      g.isTTS = S.ui.modifyTTS || false;
+      g.isTournament = S.ui.modifyTournament || false;
+      await saveGame(g);
+      await loadAllData();
+      toast('Game updated.');
+      S.ui.modifyGameOpen = false;
+      render(true);
+    },
+
+    openManualEntry: function() {
+      S.landing.manualOpen = true;
+      S.landing.manualVP1 = '';
+      S.landing.manualVP2 = '';
+      S.landing.manualWinner = '';
+      S.landing.manualNotes = '';
+      S.landing.manualF1 = S.battle.faction1 || '';
+      S.landing.manualF2 = '';
+      S.landing.manualOpp = '';
+      S.landing.manualScen = '';
+      S.landing.manualTTS = false;
+      S.landing.manualTournament = false;
+      S.landing.manualP1Tactics = [-1,-1];
+      S.landing.manualP2Tactics = [-1,-1];
+      render(true);
+    },
+    closeManualEntry: function() { S.landing.manualOpen = false; render(true); },
+
+    saveManualGame: async function() {
+      const vp1 = parseInt(getInputValue('landing.manualVP1') || S.landing.manualVP1) || 0;
+      const vp2 = parseInt(getInputValue('landing.manualVP2') || S.landing.manualVP2) || 0;
+      const winner = getInputValue('landing.manualWinner') || S.landing.manualWinner;
+      const oppName = getInputValue('landing.manualOpp') || S.landing.manualOpp || 'Guest Player';
+      const scenario = getInputValue('landing.manualScen') || S.landing.manualScen;
+      const notes = getInputValue('landing.manualNotes') || S.landing.manualNotes;
+      const f1 = getInputValue('landing.manualF1') || S.landing.manualF1 || 'Unknown';
+      const f2 = getInputValue('landing.manualF2') || S.landing.manualF2 || 'Unknown';
+      const tts = S.landing.manualTTS;
+      const tourn = S.landing.manualTournament;
+      if (!winner) { toast('Select a winner.', true); return; }
+      const key = 'g' + Date.now();
+      const oppUser = CONFIG.SPECIAL_USERS.GUEST;
+      let winnerVal;
+      if (winner === 'draw') winnerVal = 'draw';
+      else winnerVal = winner === S.auth.session.username ? S.auth.session.username : oppUser;
+      const p1Tactics = S.landing.manualP1Tactics.filter(t => t >= 0).map(t => CONFIG.BATTLE_TACTICS[t].name);
+      const p2Tactics = S.landing.manualP2Tactics.filter(t => t >= 0).map(t => CONFIG.BATTLE_TACTICS[t].name);
+      const game = {
+        id: key,
+        date: new Date().toISOString().slice(0,10),
+        player1: S.auth.session.username,
+        player2: oppUser,
+        faction1: f1,
+        faction2: f2,
+        grandAlliance1: gaFor(f1),
+        grandAlliance2: gaFor(f2),
+        rounds: [],
+        totalVP1: vp1,
+        totalVP2: vp2,
+        winner: winnerVal,
+        scenario: scenario,
+        notes: notes,
+        loggedBy: S.auth.session.username,
+        isSample: false,
+        guestName: oppName,
+        manuallyEntered: true,
+        isTTS: tts,
+        isTournament: tourn || false,
+        displayName1: S.auth.session.displayName || S.auth.session.username,
+        displayName2: oppName,
+        p1TacticsUsed: p1Tactics,
+        p2TacticsUsed: p2Tactics
+      };
+      await saveGame(game);
+      await loadAllData();
+      const user = DataCache.user(S.auth.session.username);
+      if (user) {
+        S.auth.session.gamesPlayed = user.gamesPlayed;
+        S.auth.session.wins = user.wins;
+        S.auth.session.draws = user.draws;
+      }
+      toast('Game recorded!');
+      S.landing.manualOpen = false;
+      render(true);
+    },
+
+    openManualOpponentSheet: function() { S.landing.opponentSheetOpen = true; S.landing.guestOpen = false; render(true); },
+    closeManualOpponentSheet: function() { S.landing.opponentSheetOpen = false; S.landing.guestOpen = false; render(true); },
+    selectManualOpponent: function(username, displayName) { S.landing.manualOpp = displayName || username; S.landing.opponentSheetOpen = false; S.landing.guestOpen = false; render(true); },
+    openManualGuestInput: function() { S.landing.guestOpen = true; render(true); },
+    confirmManualGuest: function() { const n = S.landing.guestInput.trim() || 'Guest Player'; S.landing.manualOpp = n; S.landing.opponentSheetOpen = false; S.landing.guestOpen = false; S.landing.guestInput = ''; render(true); },
+    cancelManualGuest: function() { S.landing.guestOpen = false; S.landing.guestInput = ''; render(true); },
+
+    openFactionPicker: function(ctx) {
+      S.ui.factionPickerFor = ctx;
+      render(true);
+    },
+    closeFactionPicker: function() { S.ui.factionPickerFor = null; render(true); },
+
+    pickFaction: function(ctx, f) {
+      if (ctx === 'f1') {
+        S.battle.faction1 = S.battle.faction1 === f ? '' : f;
+      } else if (ctx === 'f2') {
+        S.battle.faction2 = S.battle.faction2 === f ? '' : f;
+      } else if (ctx === 'reg') {
+        S.register.factions = S.register.factions.includes(f) ? S.register.factions.filter(x => x !== f) : [...S.register.factions, f];
+        render(true);
+        return;
+      } else if (ctx === 'prof') {
+        S.profile.factions = S.profile.factions.includes(f) ? S.profile.factions.filter(x => x !== f) : [...S.profile.factions, f];
+        render(true);
+        return;
+      }
+
+      S.ui.factionPickerFor = null;
+      saveDraftDebounced();
+
+      const btn = document.getElementById('faction-btn-' + ctx);
+      if (btn) {
+        const factionName = ctx === 'f1' ? S.battle.faction1 : S.battle.faction2;
+        btn.textContent = factionName || 'Select faction…';
+      }
+
+      const overlay = document.querySelector('.overlay');
+      if (overlay) overlay.remove();
+    },
+
+    clearFactionPick: function(ctx) {
+      if (ctx === 'f1') S.battle.faction1 = '';
+      else if (ctx === 'f2') S.battle.faction2 = '';
+      render(true);
+    },
+
+    setTactic: function(player, slot, tacticIdx) {
+      const arr = player === 'p1' ? S.battle.p1Tactics : S.battle.p2Tactics;
+      const val = parseInt(tacticIdx);
+      if (val < 0) { arr[slot] = -1; } else { const os = slot === 0 ? 1 : 0; if (arr[os] === val) { toast('Already selected in other slot', true); return; } arr[slot] = val; }
+      S.battle.setupError = '';
+      saveDraftDebounced();
+      render(true);
+    },
+
+    setManualTactic: function(player, slot, value) {
+      const val = parseInt(value);
+      const arr = player === 'p1' ? S.landing.manualP1Tactics : S.landing.manualP2Tactics;
+      const otherSlot = slot === 0 ? 1 : 0;
+      if (arr[otherSlot] === val && val >= 0) { toast('Tactic already selected in other slot.', true); render(true); return; }
+      arr[slot] = val;
+      render(true);
+    },
+
+    openOpponentSheet: function() { S.battle.opponentSheetOpen = true; S.battle.guestOpen = false; render(true); },
+    closeOpponentSheet: function() { S.battle.opponentSheetOpen = false; S.battle.guestOpen = false; render(true); },
+
+    selectOpponent: function(username, displayName, factions) {
+      if (typeof factions === 'string') { try { factions = JSON.parse(factions); } catch (e) { factions = []; } }
+      if (!Array.isArray(factions)) factions = [];
+      const dn = username === CONFIG.SPECIAL_USERS.GUEST ? (S.battle.guestInput.trim() || 'Guest Player') : (displayName || username);
+      S.battle.opponent = { username, displayName: dn, factions };
+      S.battle.opponentSheetOpen = false;
+      S.battle.guestOpen = false;
+      S.battle.guestInput = '';
+      S.battle.setupError = '';
+      if (username !== CONFIG.SPECIAL_USERS.ANCIENT && username !== CONFIG.SPECIAL_USERS.GUEST) {
+        const ou = DataCache.user(username);
+        if (ou && ou.factions && ou.factions.length > 0) { S.battle.faction2 = ou.factions[0]; }
+        else if (factions && factions.length) { S.battle.faction2 = factions[0]; }
+      } else if (factions && factions.length) { S.battle.faction2 = factions[0]; }
+      saveDraftDebounced();
+      render(true);
+    },
+
+    openGuestInput: function() { S.battle.guestOpen = true; render(true); },
+    cancelGuestInput: function() { S.battle.guestOpen = false; S.battle.guestInput = ''; render(true); },
+
+    confirmGuest: function() {
+      const n = S.battle.guestInput.trim() || 'Guest Player';
+      S.battle.opponent = { username: CONFIG.SPECIAL_USERS.GUEST, displayName: n, factions: [] };
+      S.battle.opponentSheetOpen = false;
+      S.battle.guestOpen = false;
+      S.battle.guestInput = '';
+      S.battle.setupError = '';
+      saveDraftDebounced();
+      render(true);
+    },
+
+    startBattle: function() {
+      const errors = [];
+      if (!S.battle.faction1) errors.push('Select your faction');
+      if (!S.battle.opponent) errors.push('Select an opponent');
+      if (!S.battle.faction2) errors.push("Select opponent's faction");
+      const p1v = S.battle.p1Tactics.filter(t => t >= 0).length;
+      const p2v = S.battle.p2Tactics.filter(t => t >= 0).length;
+      if (p1v < 2) errors.push('Select 2 battle tactics for yourself');
+      if (p2v < 2) errors.push('Select 2 battle tactics for opponent');
+      if (!S.battle.scenario) errors.push('Select a battle plan');
+      if (errors.length > 0) { S.battle.setupError = errors.join('. ') + '.'; render(true); return; }
+      clearDraft();
+      S.battle.step = 1;
+      S.battle.rounds = [defaultRound()];
+      S.battle.currentRound = 0;
+      S.battle.winner = null;
+      S.battle.tacticProgress = {};
+      S.battle._cumulative = null;
+      S.battle._underdogCache = null;
+      S.battle.underdog = null;
+      S.battle.doubleTurn = null;
+      S.battle.manualUnderdog = false;
+      S.battle.resources = { p1fury:0, p1rage:0, p1cp: CONFIG.STARTING_CP, p2fury:0, p2rage:0, p2cp: CONFIG.STARTING_CP };
+      S.battle.khorne = { p1: { points:0, unlocked:[] }, p2: { points:0, unlocked:[] } };
+      S.battle.lumineth = { p1: { scripture: { strength:0, river:0, wind:0, mountain:0 }, extraRune: false, extraUsed: false }, p2: { scripture: { strength:0, river:0, wind:0, mountain:0 }, extraRune: false, extraUsed: false } };
+      S.battle.tideState = { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
+      S.battle._prevTideState = { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
+      saveDraftDebounced();
+      render(true, 0);
+    },
+
+    toggleTacticSub: function(player, tacticIdx, subIdx) {
+      if (S.battle.doubleTurn === player) { toast('Cannot score battle tactics after taking the double turn!', true); return; }
+      const rk = S.battle.currentRound;
+      if (!S.battle.tacticProgress[rk]) S.battle.tacticProgress[rk] = { p1: {}, p2: {} };
+      const prog = S.battle.tacticProgress[rk][player];
+      if (TacticManager.canDeselectSub(player, tacticIdx, subIdx, rk)) {
+        prog[tacticIdx] = subIdx - 1;
+        if (prog[tacticIdx] < 0) delete prog[tacticIdx];
+        if (player === 'p1') S.battle.rounds[S.battle.currentRound].t1 = Math.max(0, (S.battle.rounds[S.battle.currentRound].t1 || 0) - 5);
+        else S.battle.rounds[S.battle.currentRound].t2 = Math.max(0, (S.battle.rounds[S.battle.currentRound].t2 || 0) - 5);
+      } else if (TacticManager.canSelectSub(player, tacticIdx, subIdx, rk)) {
+        prog[tacticIdx] = subIdx;
+        if (player === 'p1') S.battle.rounds[S.battle.currentRound].t1 = (S.battle.rounds[S.battle.currentRound].t1 || 0) + 5;
+        else S.battle.rounds[S.battle.currentRound].t2 = (S.battle.rounds[S.battle.currentRound].t2 || 0) + 5;
+      } else {
+        toast('Cannot score or deselect this sub now.', true);
+        return;
+      }
+      const rd = S.battle.rounds[S.battle.currentRound];
+      rd.vp1 = (rd.p1 || 0) + (rd.t1 || 0);
+      rd.vp2 = (rd.p2 || 0) + (rd.t2 || 0);
+      S.battle.rounds = [...S.battle.rounds];
+      S.battle._cumulative = null;
+      saveDraftDebounced();
+      renderPreservingScroll(true);
+    },
+
+    adjResourceDOM: function(bind, delta, minVal, maxVal) {
+      S.battle.resources[bind] = Math.max(minVal, Math.min(maxVal, (S.battle.resources[bind] || 0) + delta));
+      if (bind === 'p1fury' || bind === 'p2fury') S.battle.resources[bind] = Math.min(CONFIG.FURY_MAX, S.battle.resources[bind]);
+      const el = document.getElementById('res-' + bind);
+      if (el) el.textContent = S.battle.resources[bind];
+      saveDraftDebounced();
+    },
+
+    adjStepperDOM: debounce(function(bind, delta, maxVal) {
+      const keys = bind.split('.');
+      let obj = S;
+      for (let i = 0; i < keys.length - 1; i++) obj = obj[keys[i]];
+      const key = keys[keys.length - 1];
+      const rd = S.battle.rounds[S.battle.currentRound];
+      rd[key] = Math.min(maxVal, Math.max(0, (rd[key] || 0) + delta));
+      rd.vp1 = (rd.p1 || 0) + (rd.t1 || 0);
+      rd.vp2 = (rd.p2 || 0) + (rd.t2 || 0);
+      S.battle.rounds = [...S.battle.rounds];
+      S.battle._cumulative = null;
+      const el = document.getElementById('vp-' + bind.replace(/\./g, '-'));
+      if (el) el.textContent = rd[key];
+      let cv1 = 0, cv2 = 0;
+      for (let i = 0; i <= S.battle.currentRound; i++) { cv1 += S.battle.rounds[i].vp1 || 0; cv2 += S.battle.rounds[i].vp2 || 0; }
+      const rv1 = (rd.p1 || 0) + (rd.t1 || 0), rv2 = (rd.p2 || 0) + (rd.t2 || 0);
+      const rte = document.querySelectorAll('.score-round-total');
+      if (rte[0]) rte[0].textContent = '+' + rv1 + ' this round';
+      if (rte[1]) rte[1].textContent = '+' + rv2 + ' this round';
+      const ste1 = document.getElementById('score-total-p1');
+      const ste2 = document.getElementById('score-total-p2');
+      if (ste1) ste1.textContent = cv1;
+      if (ste2) ste2.textContent = cv2;
+      const rt = document.getElementById('running-total');
+      if (rt) rt.innerHTML = '<span style="color:var(--gold);font-weight:bold">Total</span><span style="font-size:18px;font-weight:bold;color:var(--gold)">' + cv1 + ' — ' + cv2 + '</span>';
+      saveDraftDebounced();
+    }, 50),
+
+    takeDouble: function(player) {
+      if (S.battle.doubleTurn === player) { S.battle.doubleTurn = null; S.battle.manualUnderdog = false; Actions.recheckUnderdog(); }
+      else { S.battle.doubleTurn = player; S.battle.underdog = player === 'p1' ? 'p2' : 'p1'; S.battle.manualUnderdog = true; }
+      saveDraftDebounced();
+      renderPreservingScroll(true);
+    },
+
+    clearDouble: function() { S.battle.doubleTurn = null; S.battle.manualUnderdog = false; Actions.recheckUnderdog(); saveDraftDebounced(); renderPreservingScroll(true); },
+
+    recheckUnderdog: function() {
+      if (S.battle.manualUnderdog) return;
+      const rk = S.battle.currentRound;
+      if (S.battle._underdogCache && S.battle._underdogCache.round === rk) { S.battle.underdog = S.battle._underdogCache.underdog; return; }
+      let cv1 = 0, cv2 = 0;
+      for (let i = 0; i < rk; i++) { cv1 += S.battle.rounds[i].vp1 || 0; cv2 += S.battle.rounds[i].vp2 || 0; }
+      let underdog = null;
+      if (rk === 0) underdog = null;
+      else if (cv1 < cv2) underdog = 'p1';
+      else if (cv2 < cv1) underdog = 'p2';
+      else underdog = null;
+      S.battle.underdog = underdog;
+      S.battle._underdogCache = { round: rk, underdog };
+      S.battle.resources.p1cp = underdog === 'p1' ? CONFIG.UNDERDOG_CP : CONFIG.STARTING_CP;
+      S.battle.resources.p2cp = underdog === 'p2' ? CONFIG.UNDERDOG_CP : CONFIG.STARTING_CP;
+    },
+
+    applyRoundStartResources: function() {
+      if (!S.battle.manualUnderdog) Actions.recheckUnderdog();
+      S.battle.resources.p1cp = S.battle.underdog === 'p1' ? CONFIG.UNDERDOG_CP : CONFIG.STARTING_CP;
+      S.battle.resources.p2cp = S.battle.underdog === 'p2' ? CONFIG.UNDERDOG_CP : CONFIG.STARTING_CP;
+      S.battle.resources.p1rage = S.battle.resources.p1fury || 0;
+      S.battle.resources.p2rage = S.battle.resources.p2fury || 0;
+    },
+
+    nextRound: function() {
+      if (S.battle.currentRound < CONFIG.MAX_ROUNDS - 1) {
+        S.battle._prevTideState.p1 = { ...S.battle.tideState.p1 };
+        S.battle._prevTideState.p2 = { ...S.battle.tideState.p2 };
+        const prevRound = S.battle.rounds[S.battle.currentRound];
+        S.battle.rounds.push(defaultRound());
+        S.battle.currentRound++;
+        const newRound = S.battle.rounds[S.battle.currentRound];
+        const tracker1 = getTracker(S.battle.faction1);
+        const tracker2 = getTracker(S.battle.faction2);
+        if (tracker1 && tracker1.persist) {
+          const prevFT = prevRound.p1ft || {};
+          const newFT = newRound.p1ft || {};
+          if (prevFT.value !== undefined) newFT.value = prevFT.value;
+          if (prevFT.used) newFT.used = [...prevFT.used];
+          if (prevFT.active) newFT.active = prevFT.active;
+          if (prevFT.step !== undefined) newFT.step = prevFT.step;
+          if (prevFT.track) newFT.track = prevFT.track;
+          if (prevFT.activeBlessings) newFT.activeBlessings = [...prevFT.activeBlessings];
+          newFT.addedThisRound = [];
+        }
+        if (tracker2 && tracker2.persist) {
+          const prevFT = prevRound.p2ft || {};
+          const newFT = newRound.p2ft || {};
+          if (prevFT.value !== undefined) newFT.value = prevFT.value;
+          if (prevFT.used) newFT.used = [...prevFT.used];
+          if (prevFT.active) newFT.active = prevFT.active;
+          if (prevFT.step !== undefined) newFT.step = prevFT.step;
+          if (prevFT.track) newFT.track = prevFT.track;
+          if (prevFT.activeBlessings) newFT.activeBlessings = [...prevFT.activeBlessings];
+          newFT.addedThisRound = [];
+        }
+        if (tracker1 && tracker1.type === 'delusions' && prevRound.p1ft) {
+          newRound.p1ft.previous = prevRound.p1ft.value || 0;
+          newRound.p1ft.value = prevRound.p1ft.value || 0;
+        }
+        if (tracker2 && tracker2.type === 'delusions' && prevRound.p2ft) {
+          newRound.p2ft.previous = prevRound.p2ft.value || 0;
+          newRound.p2ft.value = prevRound.p2ft.value || 0;
+        }
+        Actions.applyRoundStartResources();
+        S.battle._cumulative = null;
+        S.battle._underdogCache = null;
+        saveDraftDebounced();
+        render(true, 0);
+      }
+    },
+
+    prevRound: function() {
+      if (S.battle.currentRound > 0) {
+        S.battle.currentRound--;
+        S.battle._cumulative = null;
+        S.battle._underdogCache = null;
+        saveDraftDebounced();
+        renderPreservingScroll(true);
+      } else if (S.battle.currentRound === 0) {
+        if (confirm('Going back to the battle record screen will allow you to modify the setup, but any unsaved battle data will be lost. Continue?')) {
+          const setup = {
+            opponent: S.battle.opponent,
+            faction1: S.battle.faction1,
+            faction2: S.battle.faction2,
+            scenario: S.battle.scenario,
+            p1Tactics: S.battle.p1Tactics,
+            p2Tactics: S.battle.p2Tactics,
+            isTTS: S.battle.isTTS,
+            isTournament: S.battle.isTournament,
+            useFactionTrackers: S.battle.useFactionTrackers,
+            notes: S.battle.notes
+          };
+          S.battle.step = 0;
+          S.battle.rounds = [];
+          S.battle.currentRound = 0;
+          S.battle.winner = null;
+          S.battle.tacticProgress = {};
+          S.battle._cumulative = null;
+          S.battle._underdogCache = null;
+          S.battle.underdog = null;
+          S.battle.doubleTurn = null;
+          S.battle.manualUnderdog = false;
+          S.battle.resources = { p1fury:0, p1rage:0, p1cp: CONFIG.STARTING_CP, p2fury:0, p2rage:0, p2cp: CONFIG.STARTING_CP };
+          S.battle.khorne = { p1: { points:0, unlocked:[] }, p2: { points:0, unlocked:[] } };
+          S.battle.lumineth = { p1: { scripture: { strength:0, river:0, wind:0, mountain:0 }, extraRune: false, extraUsed: false }, p2: { scripture: { strength:0, river:0, wind:0, mountain:0 }, extraRune: false, extraUsed: false } };
+          S.battle.tideState = { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
+          S.battle._prevTideState = { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
+          S.battle.opponent = setup.opponent;
+          S.battle.faction1 = setup.faction1;
+          S.battle.faction2 = setup.faction2;
+          S.battle.scenario = setup.scenario;
+          S.battle.p1Tactics = setup.p1Tactics;
+          S.battle.p2Tactics = setup.p2Tactics;
+          S.battle.isTTS = setup.isTTS;
+          S.battle.isTournament = setup.isTournament;
+          S.battle.useFactionTrackers = setup.useFactionTrackers;
+          S.battle.notes = setup.notes;
+          clearDraft();
+          S.nav.tab = 1;
+          S.nav.currentScreen = null;
+          render(true, 0);
+        }
+      }
+    },
+
+    endGame: function() {
+      const vp1 = S.battle.rounds.reduce((s, x) => s + (x.vp1 || 0), 0);
+      const vp2 = S.battle.rounds.reduce((s, x) => s + (x.vp2 || 0), 0);
+      if (vp1 === vp2) { S.battle.winner = 'draw'; } else { S.battle.winner = vp1 > vp2 ? S.auth.session.username : S.battle.opponent.username; }
+      S.battle.step = 2;
+      saveDraftDebounced();
+      render(true);
+    },
+
+    declareVictor: function(u) { S.battle.winner = u; saveDraftDebounced(); render(true); },
+
+    backToScore: function() { S.battle.step = 1; saveDraftDebounced(); render(true); },
+
+    saveGame: async function() {
+      if (!S.battle.winner) { toast('Declare a winner first.', true); return; }
+      const key = 'g' + Date.now();
+      const rounds = S.battle.rounds.slice(0, S.battle.currentRound + 1);
+      const vp1 = rounds.reduce((s, x) => s + (x.vp1 || 0), 0);
+      const vp2 = rounds.reduce((s, x) => s + (x.vp2 || 0), 0);
+      const p1TacticNames = S.battle.p1Tactics.filter(t => t >= 0).map(t => CONFIG.BATTLE_TACTICS[t].name);
+      const p2TacticNames = S.battle.p2Tactics.filter(t => t >= 0).map(t => CONFIG.BATTLE_TACTICS[t].name);
+      const game = {
+        id: key,
+        date: new Date().toISOString().slice(0,10),
+        player1: S.auth.session.username,
+        player2: S.battle.opponent.username,
+        faction1: S.battle.faction1,
+        faction2: S.battle.faction2,
+        grandAlliance1: gaFor(S.battle.faction1),
+        grandAlliance2: gaFor(S.battle.faction2),
+        rounds: rounds,
+        totalVP1: vp1,
+        totalVP2: vp2,
+        winner: S.battle.winner,
+        scenario: S.battle.scenario,
+        notes: S.battle.notes,
+        loggedBy: S.auth.session.username,
+        isSample: false,
+        guestName: S.battle.opponent.username === CONFIG.SPECIAL_USERS.GUEST ? S.battle.opponent.displayName : null,
+        p1TacticsUsed: p1TacticNames,
+        p2TacticsUsed: p2TacticNames,
+        isTTS: S.battle.isTTS || false,
+        isTournament: S.battle.isTournament || false,
+        displayName1: S.auth.session.displayName || S.auth.session.username,
+        displayName2: S.battle.opponent.displayName
+      };
+      await saveGame(game);
+      await loadAllData();
+      const user = DataCache.user(S.auth.session.username);
+      if (user) {
+        S.auth.session.gamesPlayed = user.gamesPlayed;
+        S.auth.session.wins = user.wins;
+        S.auth.session.draws = user.draws;
+      }
+      toast('Battle recorded!');
+      S.battle.step = 0;
+      S.battle.opponent = null;
+      S.battle.faction1 = S.auth.session.factions[0] || '';
+      S.battle.faction2 = '';
+      S.battle.scenario = '';
+      S.battle.rounds = [];
+      S.battle.currentRound = 0;
+      S.battle.winner = null;
+      S.battle.notes = '';
+      S.battle.p1Tactics = [-1,-1];
+      S.battle.p2Tactics = [-1,-1];
+      S.battle.tacticProgress = {};
+      S.battle.underdog = null;
+      S.battle.doubleTurn = null;
+      S.battle.manualUnderdog = false;
+      S.battle.useFactionTrackers = true;
+      S.battle.isTTS = false;
+      S.battle.isTournament = false;
+      S.battle.khorne = { p1: { points:0, unlocked:[] }, p2: { points:0, unlocked:[] } };
+      S.battle.lumineth = { p1: { scripture: { strength:0, river:0, wind:0, mountain:0 }, extraRune: false, extraUsed: false }, p2: { scripture: { strength:0, river:0, wind:0, mountain:0 }, extraRune: false, extraUsed: false } };
+      S.battle.tideState = { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
+      S.battle._prevTideState = { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
+      clearDraft();
+      render(true);
+    },
+
+    setDashFilter: function(f) { S.ui.dashFilter = f; S.ui.expandedGame = null; render(true); },
+    toggleGameExpand: function(id) { S.ui.expandedGame = S.ui.expandedGame === id ? null : id; render(true); },
+    setStatsTab: function(i) { S.ui.statsTab = i; render(true); },
+    setStatsMode: function(m) { S.ui.statsMode = m; render(true); },
+    setStatsTTSFilter: function(f) { S.ui.statsTTSFilter = f; render(true); },
+    setStatsTournamentFilter: function(f) { S.ui.statsTournamentFilter = f; render(true); },
+    setStatsDatePreset: function(p) { S.ui.statsDatePreset = p; render(true); },
+    setStatsFactionFilter: function(f) { S.ui.statsFactionFilter = f; render(true); },
+    setLbSort: function(s) { S.ui.lbSort = s; render(true); },
+    setLbTournamentFilter: function(f) { S.ui.lbTournamentFilter = f; render(true); },
+
+    openLBModal: function(i) { const u = S.ui.lbUsers[i]; if (u) S.ui.modal = { type: 'player', user: u }; render(true); },
+    openGuestModal: function() { S.ui.modal = { type: 'guests' }; render(true); },
+    closeModal: function() { S.ui.modal = null; render(true); },
+
+    toggleDeleteConfirm: function() { S.profile.showDel = !S.profile.showDel; S.profile.delConf = ''; render(true); },
+
+    saveProfile: async function() {
+      const u = DataCache.user(S.auth.session.username);
+      if (!u) { toast('Could not load profile.', true); return; }
+      u.displayName = S.profile.name.trim() || u.username;
+      u.factions = [...S.profile.factions];
+      const profile = {
+        username: u.username,
+        display_name: u.displayName,
+        factions: u.factions,
+        is_admin: u.isAdmin || false,
+        is_suspended: u.isSuspended || false,
+        games_played: u.gamesPlayed || 0,
+        wins: u.wins || 0,
+        draws: u.draws || 0,
+      };
+      const { data: { user: authUser } } = await supabaseClient.auth.getUser();
+      if (authUser) profile.id = authUser.id;
+      await saveProfile(profile);
+      await loadAllData();
+      const updated = DataCache.user(u.username);
+      if (updated) {
+        S.auth.session = updated;
+        S.profile.name = updated.displayName;
+        S.profile.factions = [...updated.factions];
+      }
+      toast('Profile updated.');
+      render(true);
+    },
+
+    changePw: async function() {
+      if (!S.profile.curPw || !S.profile.newPw || !S.profile.conf) { toast('All fields required.', true); return; }
+      if (S.profile.newPw.length < 6) { toast('New password must be at least 6 characters.', true); return; }
+      if (S.profile.newPw !== S.profile.conf) { toast("Passwords don't match.", true); return; }
+      try {
+        const { error } = await supabaseClient.auth.updateUser({ password: S.profile.newPw });
+        if (error) throw error;
+        toast('Password changed.');
+        S.profile.curPw = '';
+        S.profile.newPw = '';
+        S.profile.conf = '';
+        render(true);
+      } catch (e) {
+        toast(e.message || 'Password change failed.', true);
+      }
+    },
+
+    deleteMyAccount: async function() {
+      if (S.profile.delConf !== S.auth.session.username) { toast("Username doesn't match.", true); return; }
+      const { error } = await supabaseClient.from('profiles').delete().eq('username', S.auth.session.username);
+      if (error) { toast('Delete failed.', true); return; }
+      await signOut();
+      S.auth.session = null;
+      S.nav.tab = 0;
+      S.profile.init = false;
+      S._allUsers = {};
+      S._allGames = [];
+      toast('Account deleted.');
+      render(true);
+    },
+
+    setAdminTab: function(i) { S.admin.tab = i; S.admin.expandedUser = null; render(true); },
+
+    toggleUserExpand: function(u) {
+      if (S.admin.expandedUser === u) { S.admin.expandedUser = null; S.admin.resetTarget = null; S.admin.editTarget = null; S.admin.confDel = null; }
+      else { S.admin.expandedUser = u; S.admin.resetTarget = null; S.admin.editTarget = null; S.admin.confDel = null; }
+      render(true);
+    },
+
+    showResetPw: function(u) { S.admin.resetTarget = u; S.admin.editTarget = null; S.admin.resetPw = ''; render(true); },
+    cancelResetPw: function() { S.admin.resetTarget = null; S.admin.resetPw = ''; render(true); },
+
+    doResetPw: async function(u) {
+      if (!S.admin.resetPw.trim()) { toast('Enter a new password.', true); return; }
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(usernameToEmail(u));
+      if (error) { toast(error.message, true); return; }
+      toast('Password reset email sent.');
+      S.admin.resetTarget = null;
+      S.admin.resetPw = '';
+      render(true);
+    },
+
+    showEditName: function(u) { S.admin.editTarget = u; S.admin.editName = DataCache.user(u)?.displayName || ''; S.admin.resetTarget = null; render(true); },
+    cancelEditName: function() { S.admin.editTarget = null; render(true); },
+
+    doEditName: async function(u) {
+      if (!S.admin.editName.trim()) { toast('Name required.', true); return; }
+      const user = DataCache.user(u);
+      if (!user) return;
+      const profile = {
+        username: u,
+        display_name: S.admin.editName.trim(),
+        factions: user.factions || [],
+        is_admin: user.isAdmin || false,
+        is_suspended: user.isSuspended || false,
+        games_played: user.gamesPlayed || 0,
+        wins: user.wins || 0,
+        draws: user.draws || 0,
+      };
+      const { data: { user: authUser } } = await supabaseClient.auth.getUser();
+      if (authUser && authUser.email === usernameToEmail(u)) profile.id = authUser.id;
+      else {
+        const { data: prof } = await supabaseClient.from('profiles').select('id').eq('username', u).single();
+        if (prof) profile.id = prof.id;
+      }
+      await saveProfile(profile);
+      await loadAllData();
+      toast('Name updated.');
+      S.admin.editTarget = null;
+      S.admin.editName = '';
+      render(true);
+    },
+
+    doToggleSuspend: async function(u) {
+      const user = DataCache.user(u);
+      if (!user) return;
+      const profile = {
+        username: u,
+        display_name: user.displayName,
+        factions: user.factions || [],
+        is_admin: user.isAdmin || false,
+        is_suspended: !user.isSuspended,
+        games_played: user.gamesPlayed || 0,
+        wins: user.wins || 0,
+        draws: user.draws || 0,
+      };
+      const { data: { user: authUser } } = await supabaseClient.auth.getUser();
+      if (authUser && authUser.email === usernameToEmail(u)) profile.id = authUser.id;
+      else {
+        const { data: prof } = await supabaseClient.from('profiles').select('id').eq('username', u).single();
+        if (prof) profile.id = prof.id;
+      }
+      await saveProfile(profile);
+      await loadAllData();
+      toast(user.isSuspended ? u + ' reinstated.' : u + ' suspended.');
+      render(true);
+    },
+
+    showDeleteUser: function(u) { S.admin.confDel = u; S.admin.delInput = ''; render(true); },
+    cancelDeleteUser: function() { S.admin.confDel = null; S.admin.delInput = ''; render(true); },
+
+    doDeleteUser: async function(u) {
+      if (S.admin.delInput !== u) { toast('Username mismatch.', true); return; }
+      const { error } = await supabaseClient.from('profiles').delete().eq('username', u);
+      if (error) { toast('Delete failed.', true); return; }
+      const games = DataCache.games.filter(g => g.player1 === u || g.player2 === u);
+      for (const g of games) {
+        if (g.player1 === u) { g.player1 = '__deleted__'; g.displayName1 = DataCache.user(u)?.displayName || u; }
+        if (g.player2 === u) { g.player2 = '__deleted__'; g.displayName2 = DataCache.user(u)?.displayName || u; }
+        await saveGame(g);
+      }
+      await loadAllData();
+      toast('Account deleted. Games preserved.');
+      S.admin.confDel = null;
+      S.admin.delInput = '';
+      S.admin.expandedUser = null;
+      render(true);
+    },
+
+    showDeleteGame: function(id) { S.admin.confDelGameId = id; render(true); },
+    cancelDeleteGame: function() { S.admin.confDelGameId = null; render(true); },
+
+    doDeleteGame: async function() {
+      const id = S.admin.confDelGameId;
+      if (!id) return;
+      const g = DataCache.games.find(g => g.id === id);
+      if (!g) { toast('Game not found.', true); S.admin.confDelGameId = null; render(true); return; }
+      await deleteGame(id);
+      await loadAllData();
+      toast('Game deleted.');
+      S.admin.confDelGameId = null;
+      render(true);
+    },
+
+    saveAdminProfile: async function() {
+      await Actions.saveProfile();
+    },
+
+    resumeDraft: async function() {
+      const draftData = await loadDraft(S.auth.session.username);
+      if (!draftData) return;
+      const draft = migrateDraft(draftData);
+      const b = S.battle;
+      b.step = draft.step;
+      b.opponent = { username: draft.opponentUsername, displayName: draft.opponentDisplayName, factions: draft.opponentFactions || [] };
+      b.faction1 = draft.faction1;
+      b.faction2 = draft.faction2;
+      b.scenario = draft.scenario;
+      b.rounds = draft.rounds || [];
+      b.currentRound = draft.currentRound || 0;
+      b.winner = draft.winner;
+      b.notes = draft.notes || '';
+      b.p1Tactics = draft.p1Tactics || [-1,-1];
+      b.p2Tactics = draft.p2Tactics || [-1,-1];
+      b.tacticProgress = draft.tacticProgress || {};
+      b.resources = draft.resources ? { ...draft.resources } : { p1fury:0, p1rage:0, p1cp: CONFIG.STARTING_CP, p2fury:0, p2rage:0, p2cp: CONFIG.STARTING_CP };
+      b.underdog = draft.underdog;
+      b.doubleTurn = draft.doubleTurn;
+      b.manualUnderdog = draft.manualUnderdog || false;
+      b.useFactionTrackers = draft.useFactionTrackers !== undefined ? draft.useFactionTrackers : true;
+      b.isTTS = draft.isTTS || false;
+      b.isTournament = draft.isTournament || false;
+      b.khorne = draft.khorne || { p1: { points:0, unlocked:[] }, p2: { points:0, unlocked:[] } };
+      b.lumineth = draft.lumineth || { p1: { scripture: { strength:0, river:0, wind:0, mountain:0 }, extraRune: false, extraUsed: false }, p2: { scripture: { strength:0, river:0, wind:0, mountain:0 }, extraRune: false, extraUsed: false } };
+      b.tideState = draft.tideState || { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
+      b._prevTideState = draft._prevTideState || { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
+      S.nav.tab = 1;
+      S.ui.draftExists = false;
+      S.ui.activeBattleNoticeShown = false;
+      render(true, 0);
+    },
+
+    discardDraft: async function() {
+      await deleteDraft(S.auth.session.username);
+      S.ui.draftExists = false;
+      const user = S.auth.session;
+      S.battle.step = 0;
+      S.battle.opponent = null;
+      S.battle.faction1 = (user && user.factions && user.factions.length > 0) ? user.factions[0] : '';
+      S.battle.faction2 = '';
+      S.battle.scenario = '';
+      S.battle.rounds = [];
+      S.battle.currentRound = 0;
+      S.battle.winner = null;
+      S.battle.notes = '';
+      S.battle.p1Tactics = [-1,-1];
+      S.battle.p2Tactics = [-1,-1];
+      S.battle.tacticProgress = {};
+      S.battle.resources = { p1fury:0, p1rage:0, p1cp: CONFIG.STARTING_CP, p2fury:0, p2rage:0, p2cp: CONFIG.STARTING_CP };
+      S.battle.underdog = null;
+      S.battle.doubleTurn = null;
+      S.battle.manualUnderdog = false;
+      S.battle.useFactionTrackers = true;
+      S.battle.isTTS = false;
+      S.battle.isTournament = false;
+      S.battle.khorne = { p1: { points:0, unlocked:[] }, p2: { points:0, unlocked:[] } };
+      S.battle.lumineth = { p1: { scripture: { strength:0, river:0, wind:0, mountain:0 }, extraRune: false, extraUsed: false }, p2: { scripture: { strength:0, river:0, wind:0, mountain:0 }, extraRune: false, extraUsed: false } };
+      S.battle.tideState = { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
+      S.battle._prevTideState = { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
+      S.battle.setupError = '';
+      render(true);
+    },
+
+    adjFTStepper: function(player, delta, minVal, maxVal) {
+      const p = player === 'p1' ? 'p1ft' : 'p2ft';
+      const rd = S.battle.rounds[S.battle.currentRound];
+      if (!rd[p]) rd[p] = { value: 0, active: null };
+      if (typeof rd[p] !== 'object' || rd[p] === null) { const val = typeof rd[p] === 'number' ? rd[p] : 0; rd[p] = { value: val, active: null }; }
+      rd[p].value = Math.min(maxVal, Math.max(minVal, (rd[p].value || 0) + delta));
+      S.battle.rounds = [...S.battle.rounds];
+      const el = document.getElementById('ft-val-' + player);
+      if (el) el.textContent = rd[p].value;
+      const rangeEl = document.getElementById('ft-range-' + player);
+      if (rangeEl) { const newVal = rd[p].value; const range = getSylvanethRange(newVal); rangeEl.innerHTML = 'Creeping Overgrowth Range: <strong>' + range + '</strong>'; }
+      saveDraftDebounced();
+    },
+
+    setFTBadMoon: function(player, face) {
+      const p = player === 'p1' ? 'p1ft' : 'p2ft';
+      const rd = S.battle.rounds[S.battle.currentRound];
+      if (!rd[p]) rd[p] = { active: null };
+      if (typeof rd[p] !== 'object' || rd[p] === null) rd[p] = { value: 0, active: null };
+      rd[p].value = parseInt(face);
+      S.battle.rounds = [...S.battle.rounds];
+      const el = document.getElementById('ft-bm-' + player);
+      if (el) el.value = face;
+      const desc = document.getElementById('ft-bm-desc-' + player);
+      if (desc) desc.textContent = CONFIG.BAD_MOON_DESCS[parseInt(face)] || '';
+      saveDraftDebounced();
+    },
+
+    toggleFTDirtyTrick: function(player, idx) {
+      const p = player === 'p1' ? 'p1ft' : 'p2ft';
+      const rd = S.battle.rounds[S.battle.currentRound];
+      if (!rd[p]) rd[p] = { active: null, used: [], value: 0, resetUsed: false };
+      if (typeof rd[p] !== 'object' || rd[p] === null) rd[p] = { value: 0, active: null, used: [], resetUsed: false };
+      if (!rd[p].used) rd[p].used = [];
+      if (rd[p].used.indexOf(idx) > -1) {
+        rd[p].used = rd[p].used.filter(i => i !== idx);
+        rd[p].value = Math.max(0, (rd[p].value || 0) - 1);
+      } else {
+        rd[p].used.push(idx);
+        rd[p].value = (rd[p].value || 0) + 1;
+      }
+      S.battle.rounds = [...S.battle.rounds];
+      const el = document.getElementById('ft-dt-' + player + '-' + idx);
+      if (el) el.classList.toggle('used');
+      const valEl = document.getElementById('ft-val-' + player);
+      if (valEl) valEl.textContent = rd[p].value;
+      saveDraftDebounced();
+    },
+
+    resetFTDirtyTricks: function(player) {
+      const p = player === 'p1' ? 'p1ft' : 'p2ft';
+      const rd = S.battle.rounds[S.battle.currentRound];
+      if (!rd[p]) rd[p] = { used: [], value: 0, resetUsed: false };
+      if (rd[p].resetUsed) { toast('End turn already used this round.', true); return; }
+      rd[p].used = [];
+      rd[p].resetUsed = true;
+      S.battle.rounds = [...S.battle.rounds];
+      CONFIG.DIRTY_TRICKS_LIST.forEach((_, i) => { const el = document.getElementById('ft-dt-' + player + '-' + i); if (el) el.classList.remove('used'); });
+      const valEl = document.getElementById('ft-val-' + player);
+      if (valEl) valEl.textContent = rd[p].value;
+      const resetBtn = document.getElementById('ft-reset-' + player);
+      if (resetBtn) resetBtn.disabled = true;
+      toast('End turn applied – checkboxes cleared, count preserved.');
+      saveDraftDebounced();
+    },
+
+    setFTDelusion: function(player, val) {
+      const p = player === 'p1' ? 'p1ft' : 'p2ft';
+      const rd = S.battle.rounds[S.battle.currentRound];
+      if (!rd[p]) rd[p] = { active: null, value: 0, previous: 0 };
+      if (typeof rd[p] !== 'object' || rd[p] === null) rd[p] = { value: 0, previous: 0 };
+      rd[p].previous = rd[p].value || 0;
+      rd[p].value = parseInt(val);
+      S.battle.rounds = [...S.battle.rounds];
+      const el = document.getElementById('ft-del-' + player);
+      if (el) el.value = val;
+      saveDraftDebounced();
+    },
+
+    advanceBadMoon: function(player) {
+      const p = player === 'p1' ? 'p1ft' : 'p2ft';
+      const rd = S.battle.rounds[S.battle.currentRound];
+      if (!rd[p]) rd[p] = { active: null, value: 0 };
+      if (typeof rd[p] !== 'object' || rd[p] === null) rd[p] = { value: 0, active: null };
+      const faces = CONFIG.BAD_MOON_FACES;
+      let current = rd[p].value || 0;
+      current = (current + 1) % faces.length;
+      rd[p].value = current;
+      S.battle.rounds = [...S.battle.rounds];
+      const el = document.getElementById('ft-bm-' + player);
+      if (el) el.value = current;
+      const desc = document.getElementById('ft-bm-desc-' + player);
+      if (desc) desc.textContent = CONFIG.BAD_MOON_DESCS[current] || '';
+      saveDraftDebounced();
+    },
+
+    setFTTide: function(player, track, step) {
+      const p = player === 'p1' ? 'p1ft' : 'p2ft';
+      const rd = S.battle.rounds[S.battle.currentRound];
+      if (!rd[p]) rd[p] = { track: null, step: 0 };
+      if (typeof rd[p] !== 'object' || rd[p] === null) rd[p] = { track: null, step: 0 };
+      const state = S.battle.tideState[player];
+      const currentTrack = state.track;
+      const currentStep = state.step;
+      let valid = false;
+      if (currentTrack === null) { if (step === 1) valid = true; }
+      else if (currentTrack === track) { if (step === currentStep + 1) valid = true; if (step === 1 && currentStep > 1) valid = true; }
+      else { if (step === 1) valid = true; }
+      if (!valid) { toast('Invalid tide selection.', true); return; }
+      state.track = track; state.step = step;
+      rd[p].track = track; rd[p].step = step;
+      S.battle.rounds = [...S.battle.rounds];
+      saveDraftDebounced();
+      renderPreservingScroll(true);
+    },
+
+    clearFTTide: function(player) {
+      const p = player === 'p1' ? 'p1ft' : 'p2ft';
+      const rd = S.battle.rounds[S.battle.currentRound];
+      if (!rd[p]) rd[p] = { track: null, step: 0 };
+      rd[p].track = null; rd[p].step = 0;
+      S.battle.tideState[player] = { ...S.battle._prevTideState[player] };
+      S.battle.rounds = [...S.battle.rounds];
+      saveDraftDebounced();
+      renderPreservingScroll(true);
+    },
+
+    adjKhornePoints: function(player, delta) {
+      const state = S.battle.khorne[player];
+      state.points = Math.max(0, state.points + delta);
+      saveDraftDebounced();
+      render(true);
+    },
+
+    unlockKhorneAbility: function(player, abilityId) {
+      const state = S.battle.khorne[player];
+      const ability = KHORNE_TREE[abilityId];
+      if (!ability) return;
+      if (state.unlocked.includes(abilityId)) { toast('Already unlocked.', true); return; }
+      const hasParent = ability.parents.length === 0 || ability.parents.some(p => state.unlocked.includes(p));
+      if (!hasParent) { toast('Prerequisite not met.', true); return; }
+      if (state.points < ability.cost) { toast('Not enough Blood Tithe Points.', true); return; }
+      state.points -= ability.cost;
+      state.unlocked.push(abilityId);
+      saveDraftDebounced();
+      renderPreservingScroll(true);
+    },
+
+    pickLuminethRune: function(player, runeKey) {
+      const rd = S.battle.rounds[S.battle.currentRound];
+      const key = player === 'p1' ? 'p1ft' : 'p2ft';
+      const active = rd[key] && rd[key].active ? rd[key].active : null;
+      const isRound1 = S.battle.currentRound === 0;
+      const state = S.battle.lumineth[player];
+      const extraRune = state.extraRune || false;
+      const extraUsed = state.extraUsed || false;
+      const allowSecond = isRound1 && extraRune && !extraUsed && active !== null;
+      if (active !== null && !allowSecond) { toast('Already picked a rune this round.', true); return; }
+      if (extraUsed && isRound1) { toast('Extra rune already used.', true); return; }
+      state.scripture[runeKey] = (state.scripture[runeKey] || 0) + 1;
+      if (!rd[key]) rd[key] = { active: runeKey };
+      else rd[key].active = runeKey;
+      if (allowSecond) state.extraUsed = true;
+      S.battle.rounds = [...S.battle.rounds];
+      saveDraftDebounced();
+      renderPreservingScroll(true);
+    },
+
+    toggleDOKBlessing: function(player, blessingKey) {
+      const p = player === 'p1' ? 'p1ft' : 'p2ft';
+      const rd = S.battle.rounds[S.battle.currentRound];
+      if (!rd[p]) rd[p] = { activeBlessings: [], addedThisRound: [] };
+      const active = rd[p].activeBlessings || [];
+      const added = rd[p].addedThisRound || [];
+      const idx = active.indexOf(blessingKey);
+      if (idx > -1) {
+        if (added.includes(blessingKey)) {
+          active.splice(idx, 1);
+          const addedIdx = added.indexOf(blessingKey);
+          if (addedIdx > -1) added.splice(addedIdx, 1);
+          rd[p].activeBlessings = active;
+          rd[p].addedThisRound = added;
+          S.battle.rounds = [...S.battle.rounds];
+          saveDraftDebounced();
+          renderPreservingScroll(true);
+          toast('Blessing ejected.');
+        } else {
+          toast('This blessing was selected in a previous round and cannot be removed.', true);
+        }
+      } else {
+        if (added.length > 0) {
+          toast('You can only add one blessing per round.', true);
+          return;
+        }
+        active.push(blessingKey);
+        added.push(blessingKey);
+        rd[p].activeBlessings = active;
+        rd[p].addedThisRound = added;
+        S.battle.rounds = [...S.battle.rounds];
+        saveDraftDebounced();
+        renderPreservingScroll(true);
+        toast('Blessing selected.');
+      }
+    },
+
+    exportData: function(type) {
+      let data = {};
+      const timestamp = new Date().toISOString().slice(0,10);
+      let filename = '';
+      if (type === 'profiles') {
+        const users = DataCache.users;
+        const exportUsers = {};
+        for (const un in users) {
+          const u = users[un];
+          const { isAdmin, isSuspended, ...safe } = u;
+          exportUsers[un] = safe;
+        }
+        data = { exportedAt: new Date().toISOString(), type: 'user_profiles', users: exportUsers };
+        filename = 'aos_profiles_' + timestamp + '.json';
+      } else if (type === 'games_all') {
+        const games = DataCache.games;
+        data = { exportedAt: new Date().toISOString(), type: 'all_games', games };
+        filename = 'aos_all_games_' + timestamp + '.json';
+      } else if (type === 'games_user') {
+        const username = S.admin.exportUser;
+        if (!username || username === 'all') { toast('Please select a specific user.', true); return; }
+        const games = DataCache.games.filter(g => g.player1 === username || g.player2 === username);
+        data = { exportedAt: new Date().toISOString(), type: 'user_games', username, games };
+        filename = 'aos_games_' + username + '_' + timestamp + '.json';
+      } else { toast('Unknown export type.', true); return; }
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast('Exported ' + filename);
+    }
+  };
+  // ─── PART 2 ──────  // ─── DRAFT MIGRATION ──────────────────────────────────────────────
+  function migrateDraft(draft) {
+    if (draft.khorne && !draft.khorne.p1) {
+      const old = draft.khorne;
+      draft.khorne = { p1: { ...old }, p2: { ...old } };
+    }
+    if (draft.luminethScripture && !draft.lumineth?.p1) {
+      const scripture = draft.luminethScripture || { strength:0, river:0, wind:0, mountain:0 };
+      const extraRune = draft.luminethExtraRune || false;
+      const extraUsed = draft.luminethExtraUsed || false;
+      const st = { scripture: { ...scripture }, extraRune, extraUsed };
+      draft.lumineth = { p1: { ...st }, p2: { ...st } };
+      delete draft.luminethScripture;
+      delete draft.luminethExtraRune;
+      delete draft.luminethExtraUsed;
+    }
+    if (draft.tideState && !draft.tideState.p1) {
+      const old = draft.tideState;
+      const oldPrev = draft._prevTideState || { track: null, step: 0 };
+      draft.tideState = { p1: { ...old }, p2: { ...old } };
+      draft._prevTideState = { p1: { ...oldPrev }, p2: { ...oldPrev } };
+    }
+    return draft;
+  }
+
+  function clearDraft() { if (S.auth.session) deleteDraft(S.auth.session.username); }
+
+  // Renamed from saveDraft to avoid conflict with the async Supabase version
+  function saveBattleDraft() {
+    if (!S.auth.session) return;
+    const b = S.battle;
+    if (b.step === 0 && !b.opponent && !b.faction1) { clearDraft(); return; }
+    const draft = {
+      step: b.step,
+      opponentUsername: b.opponent ? b.opponent.username : null,
+      opponentDisplayName: b.opponent ? b.opponent.displayName : null,
+      opponentFactions: b.opponent ? b.opponent.factions : [],
+      faction1: b.faction1,
+      faction2: b.faction2,
+      scenario: b.scenario,
+      rounds: b.rounds,
+      currentRound: b.currentRound,
+      winner: b.winner,
+      notes: b.notes,
+      p1Tactics: b.p1Tactics,
+      p2Tactics: b.p2Tactics,
+      tacticProgress: b.tacticProgress,
+      resources: { ...b.resources },
+      underdog: b.underdog,
+      doubleTurn: b.doubleTurn,
+      manualUnderdog: b.manualUnderdog,
+      useFactionTrackers: b.useFactionTrackers,
+      isTTS: b.isTTS,
+      isTournament: b.isTournament || false,
+      khorne: b.khorne ? { p1: { ...b.khorne.p1 }, p2: { ...b.khorne.p2 } } : null,
+      lumineth: b.lumineth ? { p1: { ...b.lumineth.p1 }, p2: { ...b.lumineth.p2 } } : null,
+      tideState: b.tideState ? { p1: { ...b.tideState.p1 }, p2: { ...b.tideState.p2 } } : null,
+      _prevTideState: b._prevTideState ? { p1: { ...b._prevTideState.p1 }, p2: { ...b._prevTideState.p2 } } : null
+    };
+    // Call the async Supabase version (which is still named saveDraft)
+    saveDraft(S.auth.session.username, draft);
+  }
+  const saveDraftDebounced = debounce(saveBattleDraft, 1000);
+
+  function debounce(fn, delay) {
+    let t;
+    return function(...args) {
+      clearTimeout(t);
+      t = setTimeout(() => fn.apply(this, args), delay);
+    };
+  }
+
+  // ─── RENDER FUNCTIONS ──────────────────────────────────────────────
+
+  function renderLogin() {
+    const shared = '<div class="login-wrap"><div class="login-logo"><div style="font-size:40px;margin-bottom:8px">⚔️</div><div class="login-title">Age of Sigmar<br>Battle Tracker</div><div class="login-sub">"Warducks... Assemble"</div><div style="font-size:10px; color:var(--dim); margin-top:4px; opacity:0.7; letter-spacing:0.05em;">v0.9.9 – Supabase</div></div><div class="login-box">';
+    if (S.auth.loginMode === 'login') {
+      return shared +
+        UI.errorMessage(S.auth.loginError) +
+        UI.formField('Username', UI.textInput('auth.loginUser', { placeholder: 'your_username', value: S.auth.loginUser })) +
+        UI.formField('Password', UI.passwordInput('auth.loginPw', { enterAction: 'Actions.login', value: S.auth.loginPw })) +
+        '<button class="btn btn-g" onclick="Actions.login()">Enter the Realms</button>' +
+        '<div class="divider">or</div>' +
+        '<button class="btn btn-o" onclick="Actions.switchLoginMode()">Create Account</button>' +
+        '</div></div>';
+    } else {
+      const fLabel = S.register.factions.length ? S.register.factions.slice(0,2).join(', ') + (S.register.factions.length > 2 ? ' +' + (S.register.factions.length-2) : '') : 'Choose Factions (optional)';
+      return shared +
+        UI.errorMessage(S.register.error) +
+        UI.formField('Username', UI.textInput('register.user', { placeholder: 'your_username', value: S.register.user, oninput: 'S.register.user=this.value' })) +
+        UI.formField('Password', UI.passwordInput('register.pw', { placeholder: '••••••••', value: S.register.pw, oninput: 'S.register.pw=this.value' })) +
+        UI.formField('Confirm Password', UI.passwordInput('register.conf', { placeholder: '••••••••', enterAction: 'Actions.register', value: S.register.conf, oninput: 'S.register.conf=this.value' })) +
+        UI.formField('Your Factions', '<button class="btn btn-o" onclick="Actions.openFactionPicker(\'reg\')">' + esc(fLabel) + '</button>') +
+        '<button class="btn btn-g" onclick="Actions.register()">Join the War</button>' +
+        '<div class="divider">or</div>' +
+        '<button class="btn btn-o" onclick="Actions.switchLoginMode()">Back to Login</button>' +
+        '</div></div>' +
+        renderFactionPicker('reg', S.register.factions);
+    }
+  }
+
+  function renderFactionPicker(ctx, selected) {
+    if (S.ui.factionPickerFor !== ctx) return '';
+    const isMulti = ctx === 'reg' || ctx === 'prof';
+    const q = (S.ui.factionSearch || '').toLowerCase();
+    let html = '<div class="overlay" onclick="Actions.closeFactionPicker()"><div class="sheet" onclick="event.stopPropagation()"><div class="sh-handle"></div><div class="sh-head">' + (isMulti ? 'Select Factions' : 'Select Faction') + '</div><div style="padding:8px 16px">' + UI.textInput('ui.factionSearch', { placeholder: 'Search…', value: S.ui.factionSearch || '' }) + '</div><div class="sh-body">';
+    Object.entries(FACTIONS).forEach(([ga, fs]) => {
+      const items = fs.filter(f => !q || f.toLowerCase().includes(q));
+      if (!items.length) return;
+      html += '<div style="padding:7px 16px 3px;font-size:11px;color:' + gaColor(ga) + ';letter-spacing:.08em;text-transform:uppercase;font-weight:bold">' + ga + '</div>';
+      items.forEach(f => {
+        const isSel = selected.includes(f);
+        html += '<div class="sh-item' + (isSel ? ' sel' : '') + '" onclick="Actions.pickFaction(\'' + ctx + '\',\'' + esc(f) + '\')"><div class="faction-check' + (isSel ? ' checked' : '') + '" style="border-color:' + gaColor(ga) + '"></div><span>' + esc(f) + '</span></div>';
+      });
+    });
+    html += '</div><div class="sh-foot"><button class="btn btn-g" onclick="Actions.closeFactionPicker()">Done</button></div></div></div>';
+    return html;
+  }
+
+  function renderTacticSelect(player, slot, isManual) {
+    const arr = isManual ? (player === 'p1' ? S.landing.manualP1Tactics : S.landing.manualP2Tactics) : (player === 'p1' ? S.battle.p1Tactics : S.battle.p2Tactics);
+    const cv = arr[slot] !== undefined ? arr[slot] : -1;
+    const otherSlot = slot === 0 ? 1 : 0;
+    const otherVal = arr[otherSlot] !== undefined ? arr[otherSlot] : -1;
+    const action = isManual ? 'setManualTactic(\'' + player + '\', ' + slot + ', this.value)' : 'setTactic(\'' + player + '\', ' + slot + ', this.value)';
+    let opts = '<option value="-1">-- Select Tactic ' + (slot+1) + ' --</option>';
+    CONFIG.BATTLE_TACTICS.forEach((t, i) => {
+      const dis = i === otherVal && otherVal >= 0;
+      opts += '<option value="' + i + '" ' + (cv === i ? 'selected' : '') + (dis ? ' disabled' : '') + '>' + esc(t.name) + (dis ? ' (slot ' + (otherSlot+1) + ')' : '') + '</option>';
+    });
+    return '<select class="tac-select" onchange="Actions.' + action + '">' + opts + '</select>';
+  }
+
+  function renderTacticDisplay(player) {
+    const tactics = player === 'p1' ? S.battle.p1Tactics : S.battle.p2Tactics;
+    const rk = S.battle.currentRound;
+    const progress = TacticManager.getCurrentProgress(player, rk);
+    const blockedByDouble = S.battle.doubleTurn === player;
+    if (!tactics.length) return '<div style="font-size:11px;color:var(--dim);padding:8px 0">No tactics</div>';
+    let html = '<div class="tactic-section"><div class="tactic-header-row">Battle Tactics' + (blockedByDouble ? ' (BLOCKED - Double Turn)' : '') + ' (1 per tactic per turn)</div><div class="tactic-container">';
+    const tacticIndices = tactics.filter(ti => ti >= 0);
+    while (tacticIndices.length < 2) tacticIndices.push(-1);
+    tacticIndices.forEach((ti, idx) => {
+      html += '<div class="tactic-card">';
+      if (ti < 0) { html += '<div class="tac-name" style="color:var(--dim);font-style:italic">— Tactic ' + (idx+1) + ' —</div>'; }
+      else {
+        const t = CONFIG.BATTLE_TACTICS[ti];
+        if (!t) { html += '<div class="tac-name" style="color:var(--dim)">Unknown</div>'; return; }
+        const completed = progress[ti] !== undefined ? progress[ti] : -1;
+        const thisTacticUsed = TacticManager.hasNewSubThisRound(player, ti, rk);
+        html += '<div class="tac-name">' + esc(t.name) + (thisTacticUsed ? ' ✓' : '') + '</div>';
+        t.subs.forEach((sub, si) => {
+          let cls = 'tac-sub';
+          let onclick = '';
+          if (blockedByDouble) cls += ' locked';
+          else if (TacticManager.canDeselectSub(player, ti, si, rk)) { cls += ' done'; onclick = 'onclick="Actions.toggleTacticSub(\'' + player + '\',' + ti + ',' + si + ')"'; }
+          else if (si <= completed) cls += ' done';
+          else if (TacticManager.canSelectSub(player, ti, si, rk)) { cls += ' current'; onclick = 'onclick="Actions.toggleTacticSub(\'' + player + '\',' + ti + ',' + si + ')"'; }
+          else cls += ' locked';
+          html += '<div class="' + cls + '" ' + onclick + '><span class="tac-dot-sm"></span><span>' + esc(sub) + '</span>' + (si <= completed ? '<span class="tac-plus-sm">+5</span>' : '') + '</div>';
+        });
+      }
+      html += '</div>';
+    });
+    html += '</div></div>';
+    return html;
+  }
+
+  function renderDOKSimple(player, gaCol) {
+    const p = player === 'p1' ? 'p1ft' : 'p2ft';
+    const rd = S.battle.rounds[S.battle.currentRound];
+    const data = rd[p] || {};
+    const active = data.activeBlessings || [];
+    const added = data.addedThisRound || [];
+    const blessings = [
+      { key: 'ruthlessness', label: 'Ruthlessness', desc: '+1 hit' },
+      { key: 'hatred', label: 'Hatred', desc: '+1 wound' },
+      { key: 'haste', label: 'Haste', desc: '+3" Move' },
+      { key: 'zeal', label: 'Zeal', desc: 'Ward (5+) if charged' },
+      { key: 'shadow', label: 'Shadow', desc: '-1 hit vs shooting' },
+      { key: 'cruelty', label: 'Cruelty', desc: 'Charge/Shoot after Retreat' },
+      { key: 'clarity', label: 'Clarity', desc: '+1 chant/cast' }
+    ];
+    let html = '<div style="display:flex; flex-direction:column; gap:2px; margin-top:2px;">';
+    blessings.forEach(b => {
+      const isActive = active.includes(b.key);
+      const isAddedThisRound = added.includes(b.key);
+      let cls = isActive ? 'used' : '';
+      let onclick = '';
+      let tooltip = '';
+      if (isActive && isAddedThisRound) {
+        onclick = 'onclick="Actions.toggleDOKBlessing(\'' + player + '\',\'' + b.key + '\')"';
+        tooltip = 'Click to remove (this round only)';
+      } else if (!isActive && added.length === 0) {
+        onclick = 'onclick="Actions.toggleDOKBlessing(\'' + player + '\',\'' + b.key + '\')"';
+        tooltip = 'Click to add this blessing';
+      } else if (isActive && !isAddedThisRound) {
+        cls += ' disabled';
+        tooltip = 'Active from previous round – cannot remove';
+      } else {
+        cls += ' disabled';
+        tooltip = 'Already added a blessing this round';
+      }
+      html += '<span class="ft-check ' + cls + '" style="display:block; text-align:left; padding:4px 8px; ' + (!onclick ? 'cursor:default; opacity:0.5;' : '') + '" ' + onclick + ' title="' + tooltip + '">';
+      html += '<span class="ft-dot"></span> ' + esc(b.label) + ' <span style="font-size:8px; color:var(--dim);">— ' + esc(b.desc) + '</span>';
+      if (isActive && !isAddedThisRound) {
+        html += ' <span style="font-size:7px; color:var(--gold);">(carried over)</span>';
+      }
+      html += '</span>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function renderRDP(player, data, tracker, gaCol) {
+    const val = data.value || 0;
+    const max = tracker.max || 9999;
+    return '<div class="ft-row"><span class="ft-label" style="color:' + gaCol + '"></span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjFTStepper(\'' + player + '\',-1,0,' + max + ')">−</div><div class="game-track-val" id="ft-val-' + player + '" style="color:' + gaCol + ';width:28px;height:22px;font-size:12px">' + val + '</div><div class="game-track-btn" onclick="Actions.adjFTStepper(\'' + player + '\',1,0,' + max + ')">+</div></div></div>';
+  }
+
+  function renderBadMoon(player, data, gaCol) {
+    const val = data.value || 0;
+    let html = '<div class="ft-row"><span class="ft-label">Face</span><select id="ft-bm-' + player + '" class="tac-select" style="flex:1;min-width:60px;padding:2px 4px;font-size:10px;height:22px" onchange="Actions.setFTBadMoon(\'' + player + '\',this.value)">';
+    CONFIG.BAD_MOON_FACES.forEach((f, i) => { html += '<option value="' + i + '" ' + (i === val ? 'selected' : '') + '>' + esc(f) + '</option>'; });
+    html += '</select><button class="ft-btn" onclick="Actions.advanceBadMoon(\'' + player + '\')" title="Advance to next face">→</button></div><div class="bm-desc" id="ft-bm-desc-' + player + '">' + (CONFIG.BAD_MOON_DESCS[val] || '') + '</div>';
+    return html;
+  }
+
+  function renderDirtyTricks(player, data, gaCol) {
+    const used = data.used || [];
+    const resetUsed = data.resetUsed || false;
+    const value = data.value || 0;
+    let html = '<div class="ft-row"><span class="ft-label">Used</span><span class="ft-val" id="ft-val-' + player + '" style="width:24px;height:20px;font-size:11px;color:' + gaCol + '">' + value + '</span><span style="font-size:8px;color:var(--dim)">this round</span>';
+    html += '<button class="ft-btn" id="ft-reset-' + player + '" onclick="Actions.resetFTDirtyTricks(\'' + player + '\')" ' + (resetUsed ? 'disabled style="opacity:0.4;"' : '') + ' style="font-size:9px;padding:0 8px;min-width:auto;height:20px;margin-left:4px;">End Turn</button>';
+    html += '</div><div class="ft-row" style="flex-wrap:wrap;gap:3px;padding-top:2px">';
+    CONFIG.DIRTY_TRICKS_LIST.forEach((trick, i) => {
+      const isUsed = used.indexOf(i) > -1;
+      html += '<span class="ft-check ' + (isUsed ? 'used' : '') + '" onclick="Actions.toggleFTDirtyTrick(\'' + player + '\',' + i + ')" id="ft-dt-' + player + '-' + i + '"><span class="ft-dot"></span> ' + esc(trick) + '</span>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function renderDelusions(player, data, gaCol) {
+    const val = data.value || 0;
+    const prev = data.previous !== undefined ? data.previous : 0;
+    let html = '<div class="ft-row"><span class="ft-label">Active</span><select id="ft-del-' + player + '" class="tac-select" style="flex:1;min-width:60px;padding:2px 4px;font-size:10px;height:22px" onchange="Actions.setFTDelusion(\'' + player + '\',this.value)">';
+    CONFIG.DELUSIONS_LIST.forEach((d, i) => { html += '<option value="' + i + '" ' + (i === val ? 'selected' : '') + '>' + esc(d) + '</option>'; });
+    html += '</select></div><div class="ft-row"><span class="ft-label">Prev</span><span style="font-size:10px;color:var(--parchDim)">' + (CONFIG.DELUSIONS_LIST[prev] || 'None') + '</span></div>';
+    return html;
+  }
+
+  function renderSylvaneth(player, data, tracker, gaCol) {
+    const val = data.value || 0;
+    const max = tracker.max || 12;
+    return '<div class="ft-row"><span class="ft-label" style="color:' + gaCol + '"></span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjFTStepper(\'' + player + '\',-1,0,' + max + ')">−</div><div class="game-track-val" id="ft-val-' + player + '" style="color:' + gaCol + ';width:28px;height:22px;font-size:12px">' + val + '</div><div class="game-track-btn" onclick="Actions.adjFTStepper(\'' + player + '\',1,0,' + max + ')">+</div></div><span style="font-size:8px;color:var(--dim);margin-left:3px">/' + max + '</span></div><div class="ft-row"><span class="ft-label">Creeping Overgrowth</span><span style="font-size:10px;color:var(--parchDim);" id="ft-range-' + player + '">' + getSylvanethRange(val) + '</span></div>';
+  }
+
+  function renderLumineth(player, data, gaCol) {
+    const state = S.battle.lumineth[player];
+    const scripture = state.scripture || { strength:0, river:0, wind:0, mountain:0 };
+    const active = data && data.active ? data.active : null;
+    const runeKeys = ['strength', 'river', 'wind', 'mountain'];
+    const uniqueCount = runeKeys.filter(k => scripture[k] > 0).length;
+    const zenithActive = uniqueCount >= 4;
+    const isRound1 = S.battle.currentRound === 0;
+    const extraRune = state.extraRune || false;
+    const extraUsed = state.extraUsed || false;
+    const alreadyPicked = active !== null;
+    const allowSecondPick = isRound1 && extraRune && !extraUsed && alreadyPicked;
+    const disabled = (alreadyPicked && !allowSecondPick) || (isRound1 && extraUsed);
+    let html = '<div class="ft-row" style="flex-wrap:wrap;gap:10px;justify-content:center;padding:6px 0;">';
+    runeKeys.forEach(key => {
+      const name = RUNE_DATA[key].name.split('–')[0].trim();
+      const onclick = disabled ? '' : 'onclick="Actions.pickLuminethRune(\'' + player + '\',\'' + key + '\')"';
+      html += '<button class="ft-btn" style="font-size:11px;padding:6px 16px;' + (disabled ? 'opacity:0.4;' : '') + '" ' + onclick + '>' + name + '</button>';
+    });
+    html += '</div>';
+    if (isRound1) {
+      const checked = extraRune ? 'checked' : '';
+      const disabledAttr = extraUsed ? 'disabled' : '';
+      html += '<div class="ft-row" style="justify-content:center;padding:4px 0;"><label style="font-size:10px;color:var(--parch);display:flex;align-items:center;gap:6px;"><input type="checkbox" ' + checked + ' ' + disabledAttr + ' onchange="S.battle.lumineth.' + player + '.extraRune=this.checked;saveDraftDebounced();render(true);"> Extra Rune (round 1)</label>' + (extraUsed ? '<span style="font-size:9px;color:var(--gold);margin-left:6px;">✓ used</span>' : '') + '</div>';
+    }
+    html += '<div class="ft-row" style="justify-content:center;gap:12px;font-size:10px;color:var(--parchDim);padding:4px 0;">' + runeKeys.map(key => RUNE_DATA[key].name.split('–')[0].trim() + ': ' + (scripture[key] || 0)).join(' | ') + '</div>';
+    if (active) {
+      const rune = RUNE_DATA[active];
+      html += '<div style="margin:4px 0;font-size:11px;color:var(--gold);"><strong>Active: ' + rune.name + '</strong><br><span style="color:var(--parch);">Base: ' + rune.base + '</span></div>';
+      const enhanced = [];
+      Object.entries(rune.enhanced).forEach(([otherKey, desc]) => {
+        if (scripture[otherKey] > 0) enhanced.push('<span style="color:var(--destr);">+ (' + RUNE_DATA[otherKey].name.split('–')[0].trim() + '): ' + desc + '</span>');
+      });
+      if (enhanced.length) html += '<div style="font-size:10px;padding-left:8px;">' + enhanced.join('<br>') + '</div>';
+    } else {
+      html += '<div style="font-size:10px;color:var(--dim);font-style:italic;">No rune depicted this round.</div>';
+    }
+    if (zenithActive) html += '<div style="margin-top:4px;font-size:10px;color:var(--gold);border-top:1px solid var(--bdr);padding-top:4px;">✨ Zenith Active: +4" Move & Crit on 5+ for all Lumineth.</div>';
+    return html;
+  }
+
+  function renderTides(player, data, gaCol) {
+    const state = S.battle.tideState[player];
+    const currentTrack = state.track;
+    const currentStep = state.step;
+    const activeTrack = data.track || null;
+    const activeStep = data.step || 0;
+    const isSelected = activeTrack !== null;
+    const tracks = {
+      storm: { label: 'Storm', steps: ['Unpredictable Tide', 'Inexorable Tide', "Storm's Wrath"], descs: ['Teleport a unit not in combat', '−1 Rend against IDONETH DEEPKIN units', 'Melee weapons have Crit (Mortal)'] },
+      sea: { label: 'Sea', steps: ['Concealing Tide', 'Swift Tide', "Sea's Embrace"], descs: ['−1 hit for units that didn\'t CHARGE', 'Run and still Shoot/Charge', 'Strike-First'] }
+    };
+    let html = '<div style="display:flex; gap:12px; justify-content:center;">';
+    for (const [trackKey, trackData] of Object.entries(tracks)) {
+      html += '<div style="flex:1; text-align:center;">';
+      html += '<div style="font-size:10px; color:var(--parchDim); text-transform:uppercase; margin-bottom:4px;">' + trackData.label + '</div>';
+      trackData.steps.forEach((name, idx) => {
+        const stepNum = idx + 1;
+        let selectable = false;
+        let isActiveOption = (activeTrack === trackKey && activeStep === stepNum);
+        if (isSelected) { if (isActiveOption) selectable = true; }
+        else {
+          if (currentTrack === null) { if (stepNum === 1) selectable = true; }
+          else if (currentTrack === trackKey) { if (stepNum === currentStep + 1) selectable = true; if (stepNum === 1 && currentStep > 1) selectable = true; }
+          else { if (stepNum === 1) selectable = true; }
+        }
+        const isActive = isActiveOption;
+        const isPassed = (currentTrack === trackKey && currentStep > stepNum);
+        const isOtherTrackBlocked = (currentTrack !== null && currentTrack !== trackKey && stepNum !== 1);
+        let style = 'padding:4px 8px; margin:4px 0; border-radius:4px; font-size:11px; ';
+        if (isActive) style += 'background:var(--goldDim); border:2px solid var(--gold); color:var(--gold); font-weight:bold; cursor:pointer;';
+        else if (isSelected && !isActive) style += 'background:var(--bg3); border:1px solid var(--bdr); color:var(--dim); opacity:0.3; cursor:not-allowed;';
+        else if (isPassed || isOtherTrackBlocked) style += 'background:var(--bg3); border:1px solid var(--bdr); color:var(--dim); opacity:0.4; cursor:not-allowed;';
+        else if (selectable) { style += 'background:var(--bg3); border:1px solid var(--bdr); color:var(--parch); cursor:pointer; transition:all .15s;'; style += ' onmouseover="this.style.background=\'var(--goldDim)\'; this.style.borderColor=\'var(--gold)\';"'; style += ' onmouseout="this.style.background=\'var(--bg3)\'; this.style.borderColor=\'var(--bdr)\';"'; }
+        else style += 'background:var(--bg3); border:1px solid var(--bdr); color:var(--dim); opacity:0.4; cursor:not-allowed;';
+        let onclick = '';
+        if (isActive && isSelected) onclick = 'onclick="Actions.clearFTTide(\'' + player + '\')"';
+        else if (selectable && !isActive) onclick = 'onclick="Actions.setFTTide(\'' + player + '\',\'' + trackKey + '\',' + stepNum + ')"';
+        const desc = isActive ? trackData.descs[idx] : '';
+        html += '<div style="' + style + '" ' + onclick + '>' + name + (desc ? '<br><span style="font-size:8px;color:var(--parchDim);">' + desc + '</span>' : '') + '</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function renderKhorne(player, gaCol) {
+    const state = S.battle.khorne[player];
+    let html = '<div class="khorne-tree">';
+    html += '<div class="ft-row" style="margin-bottom:6px;"><span class="ft-label" style="color:' + gaCol + ';min-width:60px;">Blood Tithe</span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjKhornePoints(\'' + player + '\',-1)">−</div><div class="game-track-val" style="width:40px;color:' + gaCol + ';">' + state.points + '</div><div class="game-track-btn" onclick="Actions.adjKhornePoints(\'' + player + '\',1)">+</div></div></div>';
+    KHORNE_ORDER.forEach(id => {
+      const ability = KHORNE_TREE[id];
+      const isUnlocked = state.unlocked.includes(id);
+      const hasParent = ability.parents.length === 0 || ability.parents.some(p => state.unlocked.includes(p));
+      const canAfford = state.points >= ability.cost;
+      const isAvailable = !isUnlocked && hasParent && canAfford;
+      let cls = 'khorne-ability';
+      let statusText = '';
+      if (isUnlocked) { cls += ' unlocked'; statusText = '✓'; }
+      else if (isAvailable) { cls += ' available'; statusText = 'Cost: ' + ability.cost; }
+      else { cls += ' locked'; if (!hasParent && ability.parents.length > 0) statusText = 'Prereq missing'; else if (!canAfford) statusText = 'Need ' + (ability.cost - state.points) + ' more'; }
+      const onclick = isAvailable ? 'onclick="Actions.unlockKhorneAbility(\'' + player + '\',\'' + id + '\')"' : '';
+      html += '<div class="' + cls + '" ' + onclick + '>' + ability.name + ' <span class="khorne-status">' + statusText + '</span></div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function renderFactionTracker(player, faction, useTrackers) {
+    if (!useTrackers) return null;
+    const tracker = getTracker(faction);
+    if (!tracker) return null;
+    const p = player === 'p1' ? 'p1ft' : 'p2ft';
+    const rd = S.battle.rounds[S.battle.currentRound];
+    let data = rd[p] || { active: null };
+    if (typeof data !== 'object' || data === null) data = { value: data, active: null };
+    const gaCol = getGAColorForFaction(faction);
+    let html = '<div class="faction-tracker-block" style="border-color:' + gaCol + '44; background:' + gaCol + '08">';
+    html += '<div class="tracker-label" style="color:' + gaCol + '">' + esc(tracker.label) + '</div>';
+    switch (tracker.type) {
+      case 'rdp': html += renderRDP(player, data, tracker, gaCol); break;
+      case 'badmoon': html += renderBadMoon(player, data, gaCol); break;
+      case 'dirtytricks': html += renderDirtyTricks(player, data, gaCol); break;
+      case 'delusions': html += renderDelusions(player, data, gaCol); break;
+      case 'sylvaneth': html += renderSylvaneth(player, data, tracker, gaCol); break;
+      case 'lumineth': html += renderLumineth(player, data, gaCol); break;
+      case 'tides': html += renderTides(player, data, gaCol); break;
+      case 'khorne': html += renderKhorne(player, gaCol); break;
+      case 'dok_simple': html += renderDOKSimple(player, gaCol); break;
+      default: html += '<div class="ft-none">Unknown tracker type</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function renderLogGame() {
+    if (S.battle.step === 0) return renderLogSetup();
+    if (S.battle.step === 1) return renderLogScore();
+    return renderLogConfirm();
+  }
+
+  function renderLogSetup() {
+    if (S.auth.session) {
+      const f = DataCache.user(S.auth.session.username);
+      if (f) { S.auth.session = f; S.profile.name = f.displayName || f.username; S.profile.factions = [...f.factions]; }
+    }
+    const users = DataCache.users;
+    const others = Object.values(users).filter(u => u.username !== S.auth.session.username && !u.isSuspended && u.username !== CONFIG.SPECIAL_USERS.ADMIN);
+    const scenarioDropdown = UI.scenarioDropdown('battle.scenario', S.battle.scenario);
+    let oppSheet = '';
+    if (S.battle.opponentSheetOpen) {
+      let oi = '';
+      oi += '<div class="sh-item" onclick="Actions.selectOpponent(\'__ancient__\',\'The Ancient Enemy\',\'[]\')">' + ic('shield', 16) + '<div><div style="font-weight:bold">The Ancient Enemy</div><div style="font-size:12px;color:var(--dim)">Practice / Solo</div></div></div>';
+      if (S.battle.guestOpen) {
+        oi += '<div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px" onclick="event.stopPropagation()"><label class="lbl">Guest Player Name</label>' + UI.textInput('battle.guestInput', { placeholder: "e.g. Dave's mate", value: S.battle.guestInput }) + '<div class="btn-row"><button class="btn btn-o btn-sm" onclick="Actions.cancelGuestInput()">Cancel</button><button class="btn btn-g btn-sm" onclick="Actions.confirmGuest()">Confirm</button></div></div>';
+      } else {
+        oi += '<div class="sh-item" onclick="Actions.openGuestInput()">' + ic('user', 16) + '<div><div style="font-weight:bold">Guest Player</div><div style="font-size:12px;color:var(--dim)">Enter name</div></div></div>';
+      }
+      others.forEach(u => {
+        const col = gaColor(gaFor(u.factions[0] || ''));
+        oi += '<div class="sh-item" data-opp-username="' + esc(u.username) + '" data-opp-display="' + esc(u.displayName || u.username) + '" data-opp-factions="' + esc(JSON.stringify(u.factions).replace(/"/g,'&quot;')) + '" onclick="Actions.selectOpponent(this.dataset.oppUsername,this.dataset.oppDisplay,this.dataset.oppFactions)">' + ic('user', 16, col) + '<div><div style="font-weight:bold">' + esc(u.displayName || u.username) + '</div><div style="font-size:12px;color:var(--dim)">' + esc(u.factions.slice(0,2).join(', ') || 'No faction') + '</div></div></div>';
+      });
+      oppSheet = '<div class="overlay" onclick="Actions.closeOpponentSheet()"><div class="sheet" onclick="event.stopPropagation()"><div class="sh-handle"></div><div class="sh-head">Select Opponent</div><div class="sh-body">' + oi + '</div></div></div>';
+    }
+    const p1L = esc(S.auth.session.username);
+    const p2L = esc(S.battle.opponent?.displayName || 'Opponent');
+    return UI.sectionHeader('Log Battle', 'Set up your engagement') +
+      '<div class="user-banner">⚔️ ' + p1L + ' ⚔️</div>' +
+      '<div class="user-banner-sub">Commander of ' + esc(S.battle.faction1 || 'an unsworn host') + '</div>' +
+      '<div style="padding:0 16px; padding-bottom:40px;">' +
+      (S.battle.setupError ? '<div class="err-msg">' + ic('alert', 16, 'var(--red)') + ' ' + esc(S.battle.setupError) + '</div>' : '') +
+      UI.formField('Your Faction', '<button class="btn btn-o" id="faction-btn-f1" onclick="Actions.openFactionPicker(\'f1\')">' + esc(S.battle.faction1 || 'Select faction…') + '</button>') +
+      UI.formField('Opponent', '<button class="btn btn-o" onclick="Actions.openOpponentSheet()">' + esc(S.battle.opponent ? S.battle.opponent.displayName : 'Select opponent…') + '</button>') +
+      (S.battle.opponent ? UI.formField("Opponent's Faction", '<button class="btn btn-o" id="faction-btn-f2" onclick="Actions.openFactionPicker(\'f2\')">' + esc(S.battle.faction2 || 'Select faction…') + '</button>') : '') +
+      UI.formField(p1L + ' Battle Tactics', '<div style="display:flex;flex-direction:column;gap:8px">' + renderTacticSelect('p1', 0, false) + renderTacticSelect('p1', 1, false) + '</div>') +
+      (S.battle.opponent ? UI.formField(p2L + ' Battle Tactics', '<div style="display:flex;flex-direction:column;gap:8px">' + renderTacticSelect('p2', 0, false) + renderTacticSelect('p2', 1, false) + '</div>') : '') +
+      UI.formField('Battle Plan / Scenario', scenarioDropdown) +
+      '<div class="check-row"><label><input type="checkbox" ' + (S.battle.useFactionTrackers ? 'checked' : '') + ' onchange="S.battle.useFactionTrackers=this.checked;saveDraftDebounced();"> Enable Faction Trackers</label></div>' +
+      '<div class="check-row"><label><input type="checkbox" ' + (S.battle.isTTS ? 'checked' : '') + ' onchange="S.battle.isTTS=this.checked;saveDraftDebounced();"> TTS Game</label><span class="tts-note">TTS games are added to your personal record but not to the ladder.</span></div>' +
+      '<div class="check-row"><label><input type="checkbox" ' + (S.battle.isTournament ? 'checked' : '') + ' onchange="S.battle.isTournament=this.checked;saveDraftDebounced();"> Tournament Game</label></div>' +
+      '<div style="height:80px;"></div>' +
+      '<button class="btn btn-g" onclick="Actions.startBattle()" style="margin-bottom:50px;">' + ic('swords', 18) + ' Begin Battle</button>' +
+      UI.spacer(40) +
+      '</div>' +
+      renderFactionPicker('f1', S.battle.faction1 ? [S.battle.faction1] : []) +
+      renderFactionPicker('f2', S.battle.faction2 ? [S.battle.faction2] : []) +
+      oppSheet;
+  }
+
+  function renderLogScore() {
+    const r = S.battle.rounds[S.battle.currentRound];
+    if (!S.battle._cumulative || S.battle._cumulative.round !== S.battle.currentRound || S.battle._cumulative.version !== S.battle.rounds.length) {
+      let cv1 = 0, cv2 = 0;
+      for (let i = 0; i <= S.battle.currentRound; i++) { cv1 += S.battle.rounds[i].vp1 || 0; cv2 += S.battle.rounds[i].vp2 || 0; }
+      S.battle._cumulative = { round: S.battle.currentRound, version: S.battle.rounds.length, cv1, cv2 };
+    }
+    const { cv1, cv2 } = S.battle._cumulative;
+    const rv1 = (r.p1 || 0) + (r.t1 || 0);
+    const rv2 = (r.p2 || 0) + (r.t2 || 0);
+    const dots = Array.from({ length: CONFIG.MAX_ROUNDS }, (_, i) => '<div class="rdot' + (i <= S.battle.currentRound ? ' on' : '') + '"></div>').join('');
+    const hist = S.battle.rounds.slice(0, S.battle.currentRound + 1).map((rd, i) => UI.statRow('Round ' + (i+1), (rd.vp1 || 0) + ' — ' + (rd.vp2 || 0))).join('');
+    const cgp = S.battle.currentRound > 0;
+    const cgn = S.battle.currentRound < CONFIG.MAX_ROUNDS - 1;
+    const isUnderdogP1 = S.battle.underdog === 'p1';
+    const isUnderdogP2 = S.battle.underdog === 'p2';
+    const doubleActive = S.battle.doubleTurn !== null;
+    const ft1 = renderFactionTracker('p1', S.battle.faction1, S.battle.useFactionTrackers);
+    const ft2 = renderFactionTracker('p2', S.battle.faction2, S.battle.useFactionTrackers);
+    let content1 = '', content2 = '';
+    if (S.battle.useFactionTrackers) {
+      const hasTracker1 = getTracker(S.battle.faction1) !== null;
+      const hasTracker2 = getTracker(S.battle.faction2) !== null;
+      if (hasTracker1 || hasTracker2) {
+        content1 = ft1 ? ft1 : '<div class="faction-tracker-block" style="border-color:var(--bdr); background:var(--bg3); opacity:0.3; min-height:70px; display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--dim); font-style:italic;">No faction tracker</div>';
+        content2 = ft2 ? ft2 : '<div class="faction-tracker-block" style="border-color:var(--bdr); background:var(--bg3); opacity:0.3; min-height:70px; display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--dim); font-style:italic;">No faction tracker</div>';
+      }
+    }
+    return '<div style="padding:16px 16px 0"><div style="font-size:11px;letter-spacing:.1em;color:var(--parchDim);text-align:center">ROUND ' + (S.battle.currentRound+1) + ' OF ' + CONFIG.MAX_ROUNDS + '</div><div style="display:flex;align-items:center;justify-content:center;gap:12px;margin:8px 0"><button class="btn btn-o btn-sm" style="width:auto;min-height:36px;padding:6px 14px" onclick="Actions.prevRound()" ' + (!cgp ? 'disabled style="opacity:.4"' : '') + '>' + ic('chevleft', 14) + ' Prev</button><div class="round-dots" style="margin:0">' + dots + '</div><button class="btn btn-o btn-sm" style="width:auto;min-height:36px;padding:6px 14px" onclick="Actions.nextRound()" ' + (!cgn ? 'disabled style="opacity:.4"' : '') + '>Next ' + ic('chevright', 14) + '</button></div>' +
+    '<div style="display:flex;justify-content:center;gap:20px;padding:4px 0 8px"><div class="double-btn' + (S.battle.doubleTurn === 'p1' ? ' active' : '') + '" onclick="Actions.takeDouble(\'p1\')">Double Turn</div>' + (doubleActive ? '<div class="btn btn-o btn-sm" style="width:auto;min-height:28px;padding:3px 8px;font-size:10px" onclick="Actions.clearDouble()">Clear</div>' : '') + '<div class="double-btn' + (S.battle.doubleTurn === 'p2' ? ' active' : '') + '" onclick="Actions.takeDouble(\'p2\')">Double Turn</div></div></div>' +
+    '<div class="score-wrap"><div class="score-col" style="border-right:1px solid var(--bdr);padding-right:8px"><div class="score-name">' + esc(S.auth.session.username) + (isUnderdogP1 ? ' <span class="underdog-badge">Underdog</span>' : '') + (S.battle.doubleTurn === 'p1' ? ' <span style="font-size:8px;color:var(--gold)">(Double)</span>' : '') + '</div><div style="font-size:11px;color:' + gaColor(gaFor(S.battle.faction1)) + '">' + esc(S.battle.faction1) + '</div>' +
+    '<div class="resource-block" style="border-top:none;padding-top:0;margin-top:4px">' + UI.resourceStepper('p1fury', S.battle.resources.p1fury || 0, { label: 'Fury', max: CONFIG.FURY_MAX, color: 'var(--fury)' }) + UI.resourceStepper('p1rage', S.battle.resources.p1rage || 0, { label: 'Rage', color: 'var(--rage)' }) + UI.resourceStepper('p1cp', S.battle.resources.p1cp || 0, { label: 'CP', color: 'var(--cp)' }) + '</div>' +
+    content1 +
+    '<div class="score-total" id="score-total-p1">' + cv1 + '</div><div class="score-round-total">+' + rv1 + ' this round</div>' +
+    '<div style="width:100%;margin-top:2px">' + UI.vpStepper('battle.rounds.' + S.battle.currentRound + '.p1', r.p1 || 0, { label: 'Primaries', max: CONFIG.SCORE.PRIMARY_MAX }) + '</div>' + renderTacticDisplay('p1') + '</div>' +
+    '<div class="score-col" style="padding-left:8px"><div class="score-name">' + esc(S.battle.opponent ? S.battle.opponent.displayName : 'Opponent') + (isUnderdogP2 ? ' <span class="underdog-badge">Underdog</span>' : '') + (S.battle.doubleTurn === 'p2' ? ' <span style="font-size:8px;color:var(--gold)">(Double)</span>' : '') + '</div><div style="font-size:11px;color:' + gaColor(gaFor(S.battle.faction2)) + '">' + esc(S.battle.faction2) + '</div>' +
+    '<div class="resource-block" style="border-top:none;padding-top:0;margin-top:4px">' + UI.resourceStepper('p2fury', S.battle.resources.p2fury || 0, { label: 'Fury', max: CONFIG.FURY_MAX, color: 'var(--fury)' }) + UI.resourceStepper('p2rage', S.battle.resources.p2rage || 0, { label: 'Rage', color: 'var(--rage)' }) + UI.resourceStepper('p2cp', S.battle.resources.p2cp || 0, { label: 'CP', color: 'var(--cp)' }) + '</div>' +
+    content2 +
+    '<div class="score-total" id="score-total-p2">' + cv2 + '</div><div class="score-round-total">+' + rv2 + ' this round</div>' +
+    '<div style="width:100%;margin-top:2px">' + UI.vpStepper('battle.rounds.' + S.battle.currentRound + '.p2', r.p2 || 0, { label: 'Primaries', max: CONFIG.SCORE.PRIMARY_MAX }) + '</div>' + renderTacticDisplay('p2') + '</div></div>' +
+    '<div style="padding:12px 16px;display:flex;gap:10px">' + (S.battle.currentRound >= CONFIG.MIN_ROUNDS_TO_END - 1 ? '<button class="btn btn-o" style="flex:1" onclick="Actions.endGame()">End Game</button>' : '') + (cgn ? '<button class="btn btn-g" style="flex:1" onclick="Actions.nextRound()">Next Round ' + ic('chevright', 16) + '</button>' : '') + (S.battle.currentRound === CONFIG.MAX_ROUNDS - 1 ? '<button class="btn btn-g" style="flex:1" onclick="Actions.endGame()">Final Result</button>' : '') + '</div>' + UI.card('Running Score', '<div id="running-history">' + hist + '</div><div class="sr" style="margin-top:6px" id="running-total"><span style="color:var(--gold);font-weight:bold">Total</span><span style="font-size:18px;font-weight:bold;color:var(--gold)">' + cv1 + ' — ' + cv2 + '</span></div>');
+  }
+
+  function renderLogConfirm() {
+    const vp1 = S.battle.rounds.reduce((s, x) => s + (x.vp1 || 0), 0);
+    const vp2 = S.battle.rounds.reduce((s, x) => s + (x.vp2 || 0), 0);
+    const w1 = S.battle.winner === S.auth.session.username;
+    const w2 = S.battle.winner === S.battle.opponent?.username;
+    const wDraw = S.battle.winner === 'draw';
+    return UI.sectionHeader('Battle Concluded') + UI.card('Final Score', '<div style="display:flex;justify-content:center;align-items:center;gap:20px;padding:12px 0"><div style="text-align:center"><div style="font-size:13px;font-weight:bold">' + esc(S.auth.session.username) + '</div><div class="score-total" style="font-size:44px">' + vp1 + '</div></div><div style="color:var(--dim);font-weight:bold">VS</div><div style="text-align:center"><div style="font-size:13px;font-weight:bold">' + esc(S.battle.opponent ? S.battle.opponent.displayName : 'Opponent') + '</div><div class="score-total" style="font-size:44px">' + vp2 + '</div></div></div>') + UI.card('Declare Victor', '<div class="btn-row"><button class="btn ' + (w1 ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'' + esc(S.auth.session.username) + '\')">' + ic('trophy', 15) + ' ' + esc(S.auth.session.username) + '</button><button class="btn ' + (w2 ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'' + esc(S.battle.opponent ? S.battle.opponent.username : '') + '\')">' + ic('trophy', 15) + ' ' + esc(S.battle.opponent ? S.battle.opponent.displayName : 'Opponent') + '</button><button class="btn ' + (wDraw ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'draw\')">' + ic('trophy', 15) + ' Draw</button></div>') + '<div style="padding:0 16px">' + UI.formField('Battle Notes (optional)', '<textarea class="inp" data-bind="battle.notes" rows="3" placeholder="How did it go?">' + esc(S.battle.notes) + '</textarea>') + '<button class="btn btn-g" onclick="Actions.saveGame()" ' + (!S.battle.winner ? 'disabled style="opacity:.5"' : '') + '>' + ic('check', 16) + ' Save Battle</button><button class="btn btn-o" style="margin-top:10px" onclick="Actions.backToScore()">Back to Score</button></div>';
+  }
+
+  function renderLanding() {
+    const games = DataCache.games;
+    const myGames = games.filter(g => g.player1 === S.auth.session.username || g.player2 === S.auth.session.username).slice(0, 3);
+    let recentHTML = '';
+    if (myGames.length === 0) { recentHTML = UI.emptyState('No battles recorded yet.'); }
+    else {
+      recentHTML = myGames.map(g => {
+        const isManual = g.manuallyEntered || g.manuallyUpdated;
+        const isTTS = g.isTTS;
+        const isTournament = g.isTournament;
+        const winnerText = g.winner === 'draw' ? 'Draw' : dname(g.winner, g);
+        return '<div class="landing-card"><div class="game-summary">' + esc(dname(g.player1, g)) + ' ' + g.totalVP1 + ' — ' + g.totalVP2 + ' ' + esc(dname(g.player2, g)) + (isManual ? ' <span class="badge manual-badge">Manual</span>' : '') + (isTTS ? ' <span class="badge tts-badge">TTS</span>' : '') + (isTournament ? ' <span class="badge tournament-badge">Tournament</span>' : '') + (g.winner === 'draw' ? ' <span class="badge draw-badge">Draw</span>' : '') + '</div><div class="game-meta">' + g.date + ' · ' + esc(g.scenario || 'Free Battle') + ' · Winner: ' + esc(winnerText) + '</div><div class="landing-actions"><button class="btn btn-o btn-sm" onclick="Actions.openModifyGame(\'' + g.id + '\')">' + ic('edit', 12) + ' Modify</button></div></div>';
+      }).join('');
+    }
+    let draftHTML = '';
+    if (S.ui.draftExists) {
+      loadDraft(S.auth.session.username).then(draft => {
+        if (draft) {
+          const vs = draft.opponentDisplayName || 'Opponent';
+          const rnd = draft.currentRound !== undefined ? 'Round ' + (draft.currentRound + 1) : 'Setup';
+          draftHTML = '<div class="card" style="border-color:var(--gold); background:rgba(201,168,76,.05)"><div class="ct">Unfinished Battle</div><div style="font-size:14px; color:var(--parch)">' + esc(S.auth.session.username) + ' vs ' + esc(vs) + '</div><div style="font-size:12px; color:var(--dim); margin-top:4px">' + rnd + ' · ' + esc(draft.scenario || 'No plan') + '</div><div class="landing-actions" style="margin-top:10px"><button class="btn btn-g btn-sm" onclick="Actions.resumeDraft()">Resume Battle</button><button class="btn btn-o btn-sm" onclick="Actions.discardDraft()">Discard</button></div></div>';
+        }
+      });
+    }
+    let modifySheet = '';
+    if (S.ui.modifyGameOpen && S.ui.modifyGameId) {
+      const g = DataCache.games.find(g => g.id === S.ui.modifyGameId);
+      if (g) {
+        modifySheet = '<div class="overlay" onclick="Actions.closeModifyGame()"><div class="sheet" onclick="event.stopPropagation()"><div class="sh-handle"></div><div class="sh-head">Modify Game Result</div><div class="sh-body" style="padding:0 16px 16px"><div class="game-summary" style="margin-bottom:12px">' + esc(dname(g.player1, g)) + ' vs ' + esc(dname(g.player2, g)) + ' — ' + g.date + '</div>' +
+          UI.formField('Player 1 VP', UI.textInput('ui.modifyVP1', { value: S.ui.modifyVP1, placeholder: 'VP' })) +
+          UI.formField('Player 2 VP', UI.textInput('ui.modifyVP2', { value: S.ui.modifyVP2, placeholder: 'VP' })) +
+          UI.formField('Winner', '<select class="tac-select" onchange="S.ui.modifyWinner=this.value"><option value="">Select winner</option><option value="' + esc(g.player1) + '" ' + (S.ui.modifyWinner === g.player1 ? 'selected' : '') + '>' + esc(dname(g.player1, g)) + '</option><option value="' + esc(g.player2) + '" ' + (S.ui.modifyWinner === g.player2 ? 'selected' : '') + '>' + esc(dname(g.player2, g)) + '</option><option value="draw" ' + (S.ui.modifyWinner === 'draw' ? 'selected' : '') + '>Draw</option></select>') +
+          UI.formField('Notes', UI.textInput('ui.modifyNotes', { value: S.ui.modifyNotes, placeholder: 'Optional notes' })) +
+          '<div class="check-row"><label><input type="checkbox" ' + (S.ui.modifyTTS ? 'checked' : '') + ' onchange="S.ui.modifyTTS=this.checked"> TTS Game</label></div>' +
+          '<div class="check-row"><label><input type="checkbox" ' + (S.ui.modifyTournament ? 'checked' : '') + ' onchange="S.ui.modifyTournament=this.checked"> Tournament Game</label></div>' +
+          '<div class="btn-row"><button class="btn btn-o" onclick="Actions.closeModifyGame()">Cancel</button><button class="btn btn-g" onclick="Actions.saveModifiedGame()">Save Changes</button></div></div></div></div>';
+      }
+    }
+    let manualSheet = '';
+    if (S.landing.manualOpen) {
+      const oppBtn = '<button class="btn btn-o" onclick="Actions.openManualOpponentSheet()">' + esc(S.landing.manualOpp || 'Select opponent…') + '</button>';
+      manualSheet = '<div class="overlay" onclick="Actions.closeManualEntry()"><div class="sheet" onclick="event.stopPropagation()"><div class="sh-handle"></div><div class="sh-head">Manual Game Entry</div><div class="sh-body" style="padding:0 16px 16px">' +
+        UI.formField('Your Faction', UI.factionDropdown('landing.manualF1', S.landing.manualF1)) +
+        UI.formField('Opponent Name', oppBtn) +
+        UI.formField("Opponent's Faction", UI.factionDropdown('landing.manualF2', S.landing.manualF2)) +
+        UI.formField('Battle Plan', UI.scenarioDropdown('landing.manualScen', S.landing.manualScen)) +
+        '<div style="margin-top:6px;border-top:1px solid var(--bdr);padding-top:10px;"><div style="font-size:11px;color:var(--parch);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">Your Battle Tactics (optional)</div><div style="display:flex;flex-direction:column;gap:8px;">' + renderTacticSelect('p1', 0, true) + renderTacticSelect('p1', 1, true) + '</div></div>' +
+        '<div style="margin-top:10px;border-top:1px solid var(--bdr);padding-top:10px;"><div style="font-size:11px;color:var(--parch);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">Opponent\'s Battle Tactics (optional)</div><div style="display:flex;flex-direction:column;gap:8px;">' + renderTacticSelect('p2', 0, true) + renderTacticSelect('p2', 1, true) + '</div></div>' +
+        UI.formField('Your VP', UI.textInput('landing.manualVP1', { value: S.landing.manualVP1, placeholder: 'Your score' })) +
+        UI.formField('Opponent VP', UI.textInput('landing.manualVP2', { value: S.landing.manualVP2, placeholder: 'Opponent score' })) +
+        UI.formField('Winner', '<select class="tac-select" onchange="S.landing.manualWinner=this.value"><option value="">Select winner</option><option value="' + esc(S.auth.session.username) + '">You</option><option value="' + esc(S.landing.manualOpp || 'Opponent') + '">Opponent</option><option value="draw">Draw</option></select>') +
+        '<div class="check-row"><label><input type="checkbox" ' + (S.landing.manualTTS ? 'checked' : '') + ' onchange="S.landing.manualTTS=this.checked"> TTS Game</label></div>' +
+        '<div class="check-row"><label><input type="checkbox" ' + (S.landing.manualTournament ? 'checked' : '') + ' onchange="S.landing.manualTournament=this.checked"> Tournament Game</label></div>' +
+        UI.formField('Notes', UI.textInput('landing.manualNotes', { value: S.landing.manualNotes, placeholder: 'Optional notes' })) +
+        '<div class="btn-row"><button class="btn btn-o" onclick="Actions.closeManualEntry()">Cancel</button><button class="btn btn-g" onclick="Actions.saveManualGame()">Save Game</button></div></div></div></div>';
+    }
+    let manualOppSheet = '';
+    if (S.landing.opponentSheetOpen) {
+      const users = DataCache.users;
+      const others = Object.values(users).filter(u => u.username !== S.auth.session.username && !u.isSuspended && u.username !== CONFIG.SPECIAL_USERS.ADMIN);
+      let oi = '';
+      if (S.landing.guestOpen) {
+        oi += '<div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px" onclick="event.stopPropagation()"><label class="lbl">Guest Player Name</label>' + UI.textInput('landing.guestInput', { placeholder: "e.g. Dave's mate", value: S.landing.guestInput }) + '<div class="btn-row"><button class="btn btn-o btn-sm" onclick="Actions.cancelManualGuest()">Cancel</button><button class="btn btn-g btn-sm" onclick="Actions.confirmManualGuest()">Confirm</button></div></div>';
+      } else {
+        oi += '<div class="sh-item" onclick="Actions.openManualGuestInput()">' + ic('user', 16) + '<div><div style="font-weight:bold">Guest Player</div><div style="font-size:12px;color:var(--dim)">Enter name</div></div></div>';
+        others.forEach(u => {
+          oi += '<div class="sh-item" onclick="Actions.selectManualOpponent(\'' + esc(u.username) + '\',\'' + esc(u.displayName || u.username) + '\')">' + ic('user', 16) + '<div><div style="font-weight:bold">' + esc(u.displayName || u.username) + '</div><div style="font-size:12px;color:var(--dim)">' + esc(u.factions.slice(0,2).join(', ') || 'No faction') + '</div></div></div>';
+        });
+      }
+      manualOppSheet = '<div class="overlay" onclick="Actions.closeManualOpponentSheet()"><div class="sheet" onclick="event.stopPropagation()"><div class="sh-handle"></div><div class="sh-head">Select Opponent</div><div class="sh-body">' + oi + '</div></div></div>';
+    }
+    return UI.sectionHeader('War Room', 'Your Command Centre') + draftHTML + '<div class="card"><div class="ct">Recent Battles</div>' + recentHTML + '</div><div style="padding:0 16px;display:flex;flex-direction:column;gap:10px"><button class="btn btn-g" onclick="Actions.goToTab(1)">' + ic('swords', 18) + ' New Battle Record</button><button class="btn btn-o" onclick="Actions.openManualEntry()">' + ic('edit', 16) + ' Quick Entry (Manual Scores)</button></div>' + modifySheet + manualSheet + manualOppSheet + UI.spacer();
+  }
+
+  function renderDashboard() {
+    const games = DataCache.games;
+    const users = DataCache.users;
+    const ug = S.auth.session.isAdmin ? games : games.filter(g => g.player1 === S.auth.session.username || g.player2 === S.auth.session.username);
+    let fg = S.ui.dashFilter === 'all' ? ug : ug.filter(g => g.player1 === S.ui.dashFilter || g.player2 === S.ui.dashFilter);
+    fg.sort((a, b) => b.date.localeCompare(a.date));
+    const tf = fg.length;
+    const mw = fg.filter(g => g.winner === S.auth.session.username).length;
+    const md = fg.filter(g => g.winner === 'draw').length;
+    const ml = tf - mw - md;
+    const mr = tf && (tf - md) > 0 ? Math.round(mw / (tf - md) * 100) : 0;
+    let cu = ['all'];
+    if (S.auth.session.isAdmin) {
+      cu = ['all', ...Object.keys(users).filter(u => u !== CONFIG.SPECIAL_USERS.ADMIN && u !== S.auth.session.username)];
+    } else {
+      const o = [...new Set(ug.flatMap(g => [g.player1, g.player2]).filter(u => u !== S.auth.session.username && !CONFIG.NON_USERS.includes(u)))];
+      cu = ['all', ...o];
+    }
+    const ci = cu.map(u => ({ value: u, label: u === 'all' ? 'All' : esc(users[u]?.username || u), onclick: 'Actions.setDashFilter(\'' + esc(u) + '\')' }));
+    const sum = tf > 0 ? '<div class="dash-summary"><div class="dash-summary-item"><div class="dash-summary-val">' + tf + '</div><div class="dash-summary-lbl">Games</div></div><div class="dash-summary-item"><div class="dash-summary-val" style="color:var(--green)">' + mw + '</div><div class="dash-summary-lbl">Wins</div></div><div class="dash-summary-item"><div class="dash-summary-val" style="color:var(--gold)">' + md + '</div><div class="dash-summary-lbl">Draws</div></div><div class="dash-summary-item"><div class="dash-summary-val" style="color:var(--red)">' + ml + '</div><div class="dash-summary-lbl">Losses</div></div><div class="dash-summary-item"><div class="dash-summary-val">' + mr + '%</div><div class="dash-summary-lbl">Win Rate</div></div></div>' : '';
+    const cards = fg.map(g => {
+      const wn = dname(g.winner, g);
+      const exp = S.ui.expandedGame === g.id;
+      const isManual = g.manuallyEntered || g.manuallyUpdated;
+      const isTournament = g.isTournament;
+      const winnerDisplay = g.winner === 'draw' ? 'Draw' : wn;
+      const detail = exp ? '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bdr)">' + g.rounds.map((r, i) => UI.statRow('Round ' + (i+1), (r.vp1 || 0) + ' — ' + (r.vp2 || 0) + ' (P:' + (r.p1 || 0) + ' T:' + (r.t1 || 0) + ')')).join('') + (g.notes ? '<div style="margin-top:10px;padding:10px;background:var(--bg3);border-radius:6px;font-style:italic;font-size:13px;color:var(--parch)">"' + esc(g.notes) + '"</div>' : '') + '</div>' : '';
+      const col1 = gaColor(g.grandAlliance1);
+      const col2 = gaColor(g.grandAlliance2);
+      return '<div class="card game-card"><div style="display:flex;justify-content:space-between;align-items:flex-start" onclick="Actions.toggleGameExpand(\'' + g.id + '\')"><div style="flex:1;min-width:0"><div class="gvs">' + esc(dname(g.player1, g)) + ' vs ' + esc(dname(g.player2, g)) + '</div><div style="font-size:12px;color:var(--dim);margin-top:2px">' + g.date + ' · ' + esc(g.scenario || 'Free Battle') + (g.isTTS ? ' <span class="badge tts-badge">TTS</span>' : '') + (isTournament ? ' <span class="badge tournament-badge">Tournament</span>' : '') + (isManual ? ' <span class="badge manual-badge">Manual</span>' : '') + (g.winner === 'draw' ? ' <span class="badge draw-badge">Draw</span>' : '') + '</div><div style="margin-top:5px"><span class="badge" style="background:' + col1 + '22;color:' + col1 + ';border:1px solid ' + col1 + '44;font-size:9px">' + esc(g.faction1) + '</span> <span class="badge" style="background:' + col2 + '22;color:' + col2 + ';border:1px solid ' + col2 + '44;font-size:9px">' + esc(g.faction2) + '</span></div></div><div style="text-align:right;flex-shrink:0;margin-left:12px"><div class="gscore">' + g.totalVP1 + '–' + g.totalVP2 + '</div><div style="font-size:11px;color:var(--gold);margin-top:3px">' + ic('trophy', 11) + ' ' + esc(winnerDisplay) + '</div><div style="margin-top:4px;color:var(--dim)">' + ic('chevdown', 14) + '</div></div></div>' + detail + '</div>';
+    }).join('');
+    return UI.sectionHeader('Battle Records') + UI.chips(ci, S.ui.dashFilter) + sum + (fg.length ? cards : UI.emptyState('No battles recorded yet.')) + UI.spacer();
+  }
+
+  function barChart(data, labelWidth) {
+    if (!data.length) return UI.emptyState('No data');
+    const W = Math.min((window.innerWidth || 380), 448) - 48;
+    const max = Math.max(1, ...data.map(d => d.w + d.l + d.d));
+    return '<div style="width:100%;padding:4px 0">' + data.map(d => {
+      const total = d.w + d.l + d.d;
+      const pct = total ? Math.round(d.w / total * 100) : 0;
+      const drawPct = total && d.d ? Math.round(d.d / total * 100) : 0;
+      const lossPct = total ? 100 - pct - drawPct : 0;
+      const col = d.color || 'var(--parchDim)';
+      let bars = '';
+      if (pct > 0) bars += '<div style="width:' + pct + '%;height:100%;background:var(--green);border-radius:' + (drawPct > 0 || lossPct > 0 ? '4px 0 0 4px' : '4px') + ';transition:width .3s"></div>';
+      if (drawPct > 0) bars += '<div style="width:' + drawPct + '%;height:100%;background:var(--gold);transition:width .3s"></div>';
+      if (lossPct > 0) bars += '<div style="width:' + lossPct + '%;height:100%;background:var(--red);border-radius:' + (pct > 0 || drawPct > 0 ? '0 4px 4px 0' : '4px') + ';transition:width .3s"></div>';
+      return '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px"><span style="width:' + (labelWidth || 90) + 'px;flex-shrink:0;color:' + col + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;font-weight:' + (d.color ? 'bold' : 'normal') + '">' + esc(d.label) + '</span><div style="flex:1;height:16px;background:var(--bg3);border-radius:4px;overflow:hidden;display:flex">' + bars + '</div><span style="min-width:36px;text-align:right;font-size:11px;color:var(--gold)">' + pct + '%</span></div>';
+    }).join('') + '</div>';
+  }
+
+  function renderStats() {
+    const games = DataCache.games;
+    const mu = S.auth.session.username;
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0,10);
+    let fromDate = new Date();
+    fromDate.setMonth(fromDate.getMonth() - 3);
+    let fromStr = fromDate.toISOString().slice(0,10);
+    let toStr = todayStr;
+    const preset = S.ui.statsDatePreset || '3m';
+    if (preset === '1m') { fromDate = new Date(); fromDate.setMonth(fromDate.getMonth() - 1); fromStr = fromDate.toISOString().slice(0,10); }
+    else if (preset === '3m') { fromDate = new Date(); fromDate.setMonth(fromDate.getMonth() - 3); fromStr = fromDate.toISOString().slice(0,10); }
+    else if (preset === '12m') { fromDate = new Date(); fromDate.setFullYear(fromDate.getFullYear() - 1); fromStr = fromDate.toISOString().slice(0,10); }
+    else fromStr = '2000-01-01';
+    let allGames = games.filter(g => (g.player1 === mu || g.player2 === mu) && g.date >= fromStr && g.date <= toStr).sort((a,b) => a.date.localeCompare(b.date));
+    const ownFactionsSet = new Set();
+    allGames.forEach(g => { const myFaction = g.player1 === mu ? g.faction1 : g.faction2; if (myFaction) ownFactionsSet.add(myFaction); });
+    const ownFactions = [...ownFactionsSet].sort();
+    const hasTTS = allGames.some(g => g.isTTS);
+    const hasTournament = allGames.some(g => g.isTournament);
+    let myGames = allGames;
+    if (S.ui.statsTTSFilter === 'tts') myGames = myGames.filter(g => g.isTTS);
+    else if (S.ui.statsTTSFilter === 'tabletop') myGames = myGames.filter(g => !g.isTTS);
+    if (S.ui.statsTournamentFilter === 'tournament') myGames = myGames.filter(g => g.isTournament);
+    else if (S.ui.statsTournamentFilter === 'casual') myGames = myGames.filter(g => !g.isTournament);
+    const factionFilter = S.ui.statsFactionFilter;
+    if (factionFilter && factionFilter !== 'all') {
+      myGames = myGames.filter(g => { const myFaction = g.player1 === mu ? g.faction1 : g.faction2; return myFaction === factionFilter; });
+    }
+    const tabs = ['Performance', 'Battle Plans', 'Tactics', 'Matchups'];
+    let content = '';
+    const presetBtns = [{ key: '1m', label: '1M' }, { key: '3m', label: '3M' }, { key: '12m', label: '12M' }, { key: 'all', label: 'All' }];
+    const dateRow = '<div class="sort-row" style="justify-content:center;gap:6px;padding:4px 16px 8px">' + presetBtns.map(p => '<div class="sort-chip' + (S.ui.statsDatePreset === p.key ? ' on' : '') + '" onclick="Actions.setStatsDatePreset(\'' + p.key + '\')">' + p.label + '</div>').join('') + '</div>';
+    let ttsRow = '';
+    if (hasTTS) { ttsRow = '<div class="stats-toggle" style="padding:0 16px 4px"><div class="stats-toggle-btn' + (S.ui.statsTTSFilter === 'all' ? ' on' : '') + '" onclick="Actions.setStatsTTSFilter(\'all\')">All</div><div class="stats-toggle-btn' + (S.ui.statsTTSFilter === 'tabletop' ? ' on' : '') + '" onclick="Actions.setStatsTTSFilter(\'tabletop\')">Tabletop</div><div class="stats-toggle-btn' + (S.ui.statsTTSFilter === 'tts' ? ' on' : '') + '" onclick="Actions.setStatsTTSFilter(\'tts\')">TTS</div></div>'; }
+    let tournRow = '';
+    if (hasTournament) { tournRow = '<div class="stats-toggle" style="padding:0 16px 4px"><div class="stats-toggle-btn' + (S.ui.statsTournamentFilter === 'all' ? ' on' : '') + '" onclick="Actions.setStatsTournamentFilter(\'all\')">All</div><div class="stats-toggle-btn' + (S.ui.statsTournamentFilter === 'casual' ? ' on' : '') + '" onclick="Actions.setStatsTournamentFilter(\'casual\')">Casual</div><div class="stats-toggle-btn' + (S.ui.statsTournamentFilter === 'tournament' ? ' on' : '') + '" onclick="Actions.setStatsTournamentFilter(\'tournament\')">Tournament</div></div>'; }
+    let factionRow = '';
+    if (ownFactions.length > 1) {
+      let factionOpts = '<option value="all" ' + (factionFilter === 'all' ? 'selected' : '') + '>All Factions</option>';
+      ownFactions.forEach(f => { factionOpts += '<option value="' + esc(f) + '" ' + (factionFilter === f ? 'selected' : '') + '>' + esc(f) + '</option>'; });
+      factionRow = '<div style="padding:4px 16px 12px"><label style="font-size:11px;color:var(--parch);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:4px;">Your Faction</label><select class="tac-select" onchange="Actions.setStatsFactionFilter(this.value)" style="max-width:200px;">' + factionOpts + '</select></div>';
+    }
+    if (S.ui.statsTab === 0) {
+      const tw = myGames.filter(g => g.winner === mu).length;
+      const td = myGames.filter(g => g.winner === 'draw').length;
+      const tg = myGames.length, tl = tg - tw - td;
+      const wp = tg && (tg - td) > 0 ? Math.round(tw / (tg - td) * 100) : 0;
+      const W = Math.min((window.innerWidth || 380), 448) - 32;
+      let ch = '';
+      if (myGames.length < 2) ch = UI.emptyState('Need at least 2 games');
+      else {
+        const isR = S.ui.statsMode === 'ratio';
+        const pts = [];
+        if (isR) {
+          let w = 0, d = 0;
+          myGames.forEach((g, i) => {
+            if (g.winner === mu) w++;
+            else if (g.winner === 'draw') d++;
+            const effective = (i+1) - d;
+            pts.push({ x: i + 1, y: effective ? Math.round(w / effective * 100) : 0, label: g.date.slice(5), above50: effective ? (w / effective) >= 0.5 : false });
+          });
+        } else {
+          let w = 0;
+          myGames.forEach((g, i) => {
+            if (g.winner === mu) w++;
+            pts.push({ x: i + 1, y: w, label: g.date.slice(5), won: g.winner === mu });
+          });
+        }
+        const mxY = isR ? 100 : Math.max(pts[pts.length - 1].y, 1);
+        const pH = 180, pW = W - 40;
+        let ptsS = '', lbs = '', dts = '';
+        const showWeekly = pts.length > 14;
+        pts.forEach((p, i) => {
+          const x = 40 + Math.round((i / (pts.length - 1)) * pW);
+          const y = pH - Math.round((p.y / mxY) * pH) + 10;
+          ptsS += x + ',' + y + ' ';
+          let label = p.label;
+          if (showWeekly && i % 7 !== 0) label = '';
+          lbs += '<text x="' + x + '" y="' + (pH + 30) + '" text-anchor="middle" fill="#888070" font-size="9">' + esc(label) + '</text>';
+          const dc = isR ? (p.above50 ? '#c9a84c' : '#c0392b') : (p.won ? '#c9a84c' : '#c0392b');
+          dts += '<circle cx="' + x + '" cy="' + y + '" r="4" fill="' + dc + '"/>';
+        });
+        let rl = '';
+        if (isR) {
+          const ry = pH - Math.round((50 / mxY) * pH) + 10;
+          rl = '<line x1="36" y1="' + ry + '" x2="' + W + '" y2="' + ry + '" stroke="rgba(201,168,76,.3)" stroke-dasharray="4,4"/><text x="34" y="' + (ry + 4) + '" text-anchor="end" fill="rgba(201,168,76,.5)" font-size="8">50%</text>';
+        }
+        let gd = '';
+        const gs = isR ? [0, 25, 50, 75, 100] : Array.from({ length: mxY + 1 }, (_, i) => i).filter(v => v % Math.ceil(mxY / 5) === 0 || v === mxY);
+        gs.forEach(v => {
+          const y = pH - Math.round((v / mxY) * pH) + 10;
+          gd += '<line x1="36" y1="' + y + '" x2="' + W + '" y2="' + y + '" stroke="rgba(201,168,76,.1)"/><text x="34" y="' + (y + 4) + '" text-anchor="end" fill="#888070" font-size="9">' + v + '</text>';
+        });
+        ch = '<div class="chart-wrap"><svg width="' + W + '" height="230" style="display:block">' + gd + rl + '<polyline points="' + ptsS.trim() + '" fill="none" stroke="#c9a84c" stroke-width="2"/>' + dts + lbs + '</svg></div>';
+      }
+      const tgH = '<div class="stats-toggle"><div class="stats-toggle-btn' + (S.ui.statsMode === 'wins' ? ' on' : '') + '" onclick="Actions.setStatsMode(\'wins\')">Cumulative Wins</div><div class="stats-toggle-btn' + (S.ui.statsMode === 'ratio' ? ' on' : '') + '" onclick="Actions.setStatsMode(\'ratio\')">Win/Loss Ratio</div></div>';
+      const dataGrid = '<div class="stats-data-grid"><div class="stat-item"><div class="stat-val">' + tg + '</div><div class="stat-lbl">Games</div></div><div class="stat-item"><div class="stat-val" style="color:var(--green)">' + tw + '</div><div class="stat-lbl">Wins</div></div><div class="stat-item"><div class="stat-val" style="color:var(--gold)">' + td + '</div><div class="stat-lbl">Draws</div></div><div class="stat-item"><div class="stat-val" style="color:var(--red)">' + tl + '</div><div class="stat-lbl">Losses</div></div><div class="stat-item"><div class="stat-val">' + wp + '%</div><div class="stat-lbl">Win Rate</div></div></div>';
+      content = UI.card('Your Performance', dataGrid) + UI.card('Performance Over Time', tgH + ch);
+    } else if (S.ui.statsTab === 1) {
+      const ps = {};
+      myGames.forEach(g => { const p = g.scenario || 'Unknown'; if (!ps[p]) ps[p] = { w:0, l:0, d:0 }; if (g.winner === mu) ps[p].w++; else if (g.winner === 'draw') ps[p].d++; else ps[p].l++; });
+      const entries = Object.entries(ps).sort((a,b) => (b[1].w + b[1].l + b[1].d) - (a[1].w + a[1].l + a[1].d)).map(([label, { w, l, d }]) => ({ label, w, l, d }));
+      let dataRows = entries.length ? '<div style="margin-bottom:12px">' + entries.map(d => { const total = d.w + d.l + d.d; const pct = total ? Math.round(d.w / total * 100) : 0; return UI.statRow(d.label, d.w + 'W ' + d.d + 'D ' + d.l + 'L (' + pct + '%)'); }).join('') + '</div>' : UI.emptyState('No data yet');
+      content = UI.card('Battle Plan Win/Loss', dataRows + barChart(entries, 90));
+    } else if (S.ui.statsTab === 2) {
+      const ts = {}; CONFIG.BATTLE_TACTICS.forEach(t => { ts[t.name] = { w:0, l:0, d:0 }; });
+      myGames.forEach(g => {
+        const p1Tactics = g.p1TacticsUsed || [];
+        const p2Tactics = g.p2TacticsUsed || [];
+        const isP1 = g.player1 === mu;
+        const myTactics = isP1 ? p1Tactics : p2Tactics;
+        myTactics.forEach(tn => { if (ts[tn]) { if (g.winner === mu) ts[tn].w++; else if (g.winner === 'draw') ts[tn].d++; else ts[tn].l++; } });
+      });
+      const entries = Object.entries(ts).filter(([n,s]) => s.w + s.l + s.d > 0).sort((a,b) => (b[1].w + b[1].l + b[1].d) - (a[1].w + a[1].l + a[1].d)).map(([label, { w, l, d }]) => ({ label, w, l, d }));
+      let dataRows = entries.length ? '<div style="margin-bottom:12px">' + entries.map(d => { const total = d.w + d.l + d.d; const pct = total ? Math.round(d.w / total * 100) : 0; return UI.statRow(d.label, d.w + 'W ' + d.d + 'D ' + d.l + 'L (' + pct + '%)'); }).join('') + '</div>' : UI.emptyState('No tactic data yet');
+      content = UI.card('Battle Tactic Win/Loss', dataRows + barChart(entries, 100));
+    } else if (S.ui.statsTab === 3) {
+      const matchups = {};
+      myGames.forEach(g => {
+        const isP1 = g.player1 === mu;
+        const oppFaction = isP1 ? g.faction2 : g.faction1;
+        if (!oppFaction || (CONFIG.NON_USERS.includes(g.player2) && !isP1) || (CONFIG.NON_USERS.includes(g.player1) && isP1)) return;
+        if (!matchups[oppFaction]) matchups[oppFaction] = { w:0, l:0, d:0 };
+        if (g.winner === mu) matchups[oppFaction].w++;
+        else if (g.winner === 'draw') matchups[oppFaction].d++;
+        else matchups[oppFaction].l++;
+      });
+      let entries = Object.entries(matchups).map(([label, { w, l, d }]) => ({ label, w, l, d }));
+      entries.sort((a,b) => (b.w + b.l + b.d) - (a.w + a.l + a.d));
+      let dataRows = entries.length ? '<div style="margin-bottom:12px">' + entries.map(d => { const total = d.w + d.l + d.d; const pct = total ? Math.round(d.w / total * 100) : 0; return UI.statRow(d.label, d.w + 'W ' + d.d + 'D ' + d.l + 'L (' + pct + '%)'); }).join('') + '</div>' : UI.emptyState('No matchup data yet');
+      content = UI.card('Matchup Win/Loss', barChart(entries, 110) + dataRows);
+    } else content = UI.emptyState('Select a tab above.');
+    return UI.sectionHeader('Statistics') + dateRow + ttsRow + tournRow + factionRow + UI.tabRow(tabs, S.ui.statsTab, 'Actions.setStatsTab') + content + UI.spacer();
+  }
+
+  function renderLeaderboard() {
+    const games = DataCache.games;
+    const users = DataCache.users;
+    const filter = S.ui.lbTournamentFilter || 'all';
+    let ul = Object.values(users).filter(u => !u.isAdmin);
+    const lb = ul.map(u => {
+      let mg = games.filter(g => (g.player1 === u.username || g.player2 === u.username));
+      mg = mg.filter(g => !g.isTTS);
+      if (filter === 'tournament') mg = mg.filter(g => g.isTournament);
+      else if (filter === 'casual') mg = mg.filter(g => !g.isTournament);
+      const wins = mg.filter(g => g.winner === u.username).length;
+      const draws = mg.filter(g => g.winner === 'draw').length;
+      const losses = mg.length - wins - draws;
+      const fc = {};
+      mg.forEach(g => { const f = g.player1 === u.username ? g.faction1 : g.faction2; if (f) fc[f] = (fc[f] || 0) + 1; });
+      const fav = Object.entries(fc).sort((a,b) => b[1] - a[1])[0]?.[0] || u.factions[0] || null;
+      const ga = fav ? gaFor(fav) : null;
+      const pct = mg.length && (mg.length - draws) > 0 ? (wins / (mg.length - draws) * 100) : 0;
+      return { ...u, wins, draws, losses, gp: mg.length, pct: Math.round(pct), fav, ga };
+    });
+    if (S.ui.lbSort === 'wins') lb.sort((a,b) => b.wins - a.wins || b.pct - a.pct);
+    else if (S.ui.lbSort === 'ratio') lb.sort((a,b) => b.pct - a.pct || b.wins - a.wins);
+    else if (S.ui.lbSort === 'name') lb.sort((a,b) => a.username.localeCompare(b.username));
+    S.ui.lbUsers = lb;
+    let gg = games.filter(g => g.player1 === CONFIG.SPECIAL_USERS.GUEST || g.player2 === CONFIG.SPECIAL_USERS.GUEST);
+    gg = gg.filter(g => !g.isTTS);
+    if (filter === 'tournament') gg = gg.filter(g => g.isTournament);
+    else if (filter === 'casual') gg = gg.filter(g => !g.isTournament);
+    const gw = gg.filter(g => g.winner === CONFIG.SPECIAL_USERS.GUEST).length;
+    const gd = gg.filter(g => g.winner === 'draw').length;
+    const gn = [...new Set(gg.map(g => g.guestName).filter(Boolean))];
+    const so = [{ value: 'wins', label: 'Wins' }, { value: 'ratio', label: 'Win Ratio' }, { value: 'name', label: 'Name' }];
+    const lbFilterChips = [{ value: 'all', label: 'All' }, { value: 'casual', label: 'Casual' }, { value: 'tournament', label: 'Tournament' }];
+    const filterRow = '<div class="sort-row" style="justify-content:center;gap:6px;padding:4px 16px 8px">' + lbFilterChips.map(c => '<div class="sort-chip' + (S.ui.lbTournamentFilter === c.value ? ' on' : '') + '" onclick="Actions.setLbTournamentFilter(\'' + c.value + '\')">' + c.label + '</div>').join('') + '</div>';
+    const cards = lb.map((u, i) => '<div class="card" style="cursor:pointer;' + (i === 0 ? 'border-color:var(--gold)' : '') + '" onclick="Actions.openLBModal(' + i + ')"><div style="display:flex;align-items:center;gap:12px"><div style="font-size:' + (i === 0 ? '26' : '20') + 'px;width:38px;text-align:center">' + (i === 0 ? '🏆' : '#' + (i+1)) + '</div><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-weight:bold;font-size:15px">' + esc(u.username) + '</span>' + UI.factionBadge(u.ga) + '</div><div style="font-size:12px;color:var(--dim);margin-top:2px">' + esc(u.fav || 'No faction recorded') + '</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:20px;font-weight:bold;color:var(--gold)">' + u.pct + '%</div><div style="font-size:11px;color:var(--dim)">' + u.wins + 'W ' + u.draws + 'D ' + u.losses + 'L</div></div></div></div>').join('');
+    const gc = gg.length ? '<div class="card" style="border-style:dashed;opacity:.8;cursor:pointer" onclick="Actions.openGuestModal()"><div style="display:flex;align-items:center;gap:12px"><div style="width:38px;text-align:center;font-size:22px">👤</div><div style="flex:1"><div style="font-weight:bold">Guest Players</div><div style="font-size:12px;color:var(--dim)">' + esc(gn.slice(0,3).join(', ') + (gn.length > 3 ? ' +' + (gn.length-3) + ' more' : '')) + '</div></div><div style="text-align:right"><div style="font-size:18px;font-weight:bold;color:var(--dim)">' + (gg.length && (gg.length - gd) > 0 ? Math.round(gw / (gg.length - gd) * 100) : 0) + '%</div><div style="font-size:11px;color:var(--dim)">' + gw + 'W ' + gd + 'D ' + (gg.length - gw - gd) + 'L</div></div></div></div>' : '';
+    let md = '';
+    if (S.ui.modal?.type === 'player') {
+      const u = S.ui.modal.user;
+      md = '<div class="overlay" onclick="Actions.closeModal()"><div class="sheet" onclick="event.stopPropagation()"><div class="sh-handle"></div><div class="sh-head">' + esc(u.username) + '</div><div class="sh-body" style="padding:0 16px 16px">' + [['Games Played', u.gp], ['Wins', u.wins], ['Draws', u.draws], ['Losses', u.losses], ['Win %', u.pct + '%'], ['Grand Alliance', u.ga || '—'], ['Favourite Faction', u.fav || '—']].map(([l, v]) => UI.statRow(l, v)).join('') + '</div></div></div>';
+    } else if (S.ui.modal?.type === 'guests') {
+      const rows = gn.map(n => {
+        const ng = gg.filter(g => g.guestName === n);
+        const nw = ng.filter(g => g.winner === CONFIG.SPECIAL_USERS.GUEST).length;
+        const nd = ng.filter(g => g.winner === 'draw').length;
+        return UI.statRow(n, nw + 'W ' + nd + 'D ' + (ng.length - nw - nd) + 'L');
+      }).join('');
+      md = '<div class="overlay" onclick="Actions.closeModal()"><div class="sheet" onclick="event.stopPropagation()"><div class="sh-handle"></div><div class="sh-head">Guest Players (Combined)</div><div class="sh-body" style="padding:0 16px 16px">' + [['Games', gg.length], ['Wins', gw], ['Draws', gd], ['Losses', gg.length - gw - gd], ['Win %', gg.length && (gg.length - gd) > 0 ? Math.round(gw / (gg.length - gd) * 100) + '%' : '—']].map(([l, v]) => UI.statRow(l, v)).join('') + '<div style="margin-top:12px;font-size:11px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Individual Guests</div>' + rows + '<div style="margin-top:12px;font-size:12px;color:var(--dim);font-style:italic">Guests are not ranked.</div></div></div></div>';
+    }
+    return UI.sectionHeader('Leaderboard', 'Champions of the Mortal Realms') + filterRow + UI.sortChips(so, S.ui.lbSort, 'Actions.setLbSort') + (!lb.length ? UI.emptyState('No warriors yet.') : cards) + gc + md + UI.spacer();
+  }
+
+  function renderProfile() {
+    if (!S.profile.init) { S.profile.name = S.auth.session.displayName || S.auth.session.username; S.profile.factions = [...S.auth.session.factions]; S.profile.init = true; }
+    const games = DataCache.games;
+    const mg = games.filter(g => g.player1 === S.auth.session.username || g.player2 === S.auth.session.username);
+    const wins = mg.filter(g => g.winner === S.auth.session.username).length;
+    const draws = mg.filter(g => g.winner === 'draw').length;
+    const fl = S.profile.factions.length ? S.profile.factions.slice(0,2).join(', ') + (S.profile.factions.length > 2 ? ' +' + (S.profile.factions.length-2) : '') : 'Select factions…';
+    const aw = S.auth.session.isAdmin && !DataCache.user('admin')?.adminPasswordChanged;
+    return UI.sectionHeader('My Profile', S.auth.session.username) + (aw ? UI.warning('Default admin credentials active — change in Admin → My Account') : '') +
+      UI.card('Stats', [['Games', mg.length], ['Wins', wins], ['Draws', draws], ['Losses', mg.length - wins - draws], ['Win %', mg.length && (mg.length - draws) > 0 ? Math.round(wins / (mg.length - draws) * 100) + '%' : '—']].map(([l, v]) => UI.statRow(l, v)).join('')) +
+      UI.card('Edit Profile', UI.formField('Display Name', UI.textInput('profile.name', { value: S.profile.name, oninput: 'S.profile.name=this.value' })) + UI.formField('Factions', '<button class="btn btn-o" onclick="Actions.openFactionPicker(\'prof\')">' + esc(fl) + '</button>') + '<button class="btn btn-g" onclick="Actions.saveProfile()">Save Changes</button>') +
+      UI.card('Change Password', UI.formField('Current Password', UI.passwordInput('profile.curPw', { oninput: 'S.profile.curPw=this.value' })) + UI.formField('New Password', UI.passwordInput('profile.newPw', { oninput: 'S.profile.newPw=this.value' })) + UI.formField('Confirm New', UI.passwordInput('profile.conf', { oninput: 'S.profile.conf=this.value' })) + '<button class="btn btn-o" onclick="Actions.changePw()">' + ic('lock', 14) + ' Change Password</button>') +
+      '<div class="card" style="border-color:rgba(231,76,60,.3)"><div class="ct" style="color:var(--red)">Danger Zone</div><button class="btn btn-d" onclick="Actions.toggleDeleteConfirm()">Delete My Account</button>' + (S.profile.showDel ? '<div style="margin-top:12px">' + UI.formField('Type username to confirm', UI.textInput('profile.delConf', { placeholder: S.auth.session.username, value: S.profile.delConf })) + '<button class="btn btn-d" onclick="Actions.deleteMyAccount()">Confirm Delete</button></div>' : '') + '</div>' + renderFactionPicker('prof', S.profile.factions) + UI.spacer();
+  }
+
+  function renderAdmin() {
+    if (!S.admin.nameInit) { S.admin.name = S.auth.session.displayName || S.auth.session.username; S.admin.nameInit = true; }
+    const tabs = ['Users', 'Games', 'My Account', 'App Stats', 'Export'];
+    const users = DataCache.users;
+    const games = DataCache.games;
+    const ul = Object.values(users).filter(u => !u.isAdmin);
+    let ct = '';
+    if (S.admin.tab === 0) {
+      ct = ul.map(u => {
+        const exp = S.admin.expandedUser === u.username;
+        let tr = '';
+        if (exp) {
+          tr = '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bdr);display:flex;flex-direction:column;gap:8px">' +
+            (S.admin.resetTarget === u.username ? UI.formField('New Password for ' + esc(u.username), UI.passwordInput('admin.resetPw', { placeholder: 'New password' })) + '<div class="btn-row"><button class="btn btn-o btn-sm" onclick="Actions.cancelResetPw()">Cancel</button><button class="btn btn-g btn-sm" onclick="Actions.doResetPw(\'' + esc(u.username) + '\')">' + ic('check', 14) + ' Confirm Reset</button></div>' : '<button class="btn btn-o btn-sm" onclick="Actions.showResetPw(\'' + esc(u.username) + '\')">' + ic('lock', 14) + ' Reset Password</button>') +
+            (S.admin.editTarget === u.username ? UI.formField('New Display Name', UI.textInput('admin.editName', { value: S.admin.editName })) + '<div class="btn-row"><button class="btn btn-o btn-sm" onclick="Actions.cancelEditName()">Cancel</button><button class="btn btn-g btn-sm" onclick="Actions.doEditName(\'' + esc(u.username) + '\')">' + ic('check', 14) + ' Save</button></div>' : '<button class="btn btn-o btn-sm" onclick="Actions.showEditName(\'' + esc(u.username) + '\')">' + ic('edit', 14) + ' Edit Name</button>') +
+            '<button class="btn btn-sm ' + (u.isSuspended ? 'btn-g' : 'btn-o') + '" onclick="Actions.doToggleSuspend(\'' + esc(u.username) + '\')">' + ic('refresh', 14) + ' ' + (u.isSuspended ? 'Unsuspend' : 'Suspend') + '</button>' +
+            (S.admin.confDel === u.username ? '<div style="font-size:13px;color:var(--red);margin-bottom:6px">Type username to confirm:</div>' + UI.textInput('admin.delInput', { placeholder: u.username, value: S.admin.delInput }) + '<div class="btn-row" style="margin-top:8px"><button class="btn btn-o btn-sm" onclick="Actions.cancelDeleteUser()">Cancel</button><button class="btn btn-d btn-sm" onclick="Actions.doDeleteUser(\'' + esc(u.username) + '\')">' + ic('trash', 14) + ' Delete</button></div>' : '<button class="btn btn-d btn-sm" onclick="Actions.showDeleteUser(\'' + esc(u.username) + '\')">' + ic('trash', 14) + ' Delete Account</button>') +
+            '</div>';
+        }
+        return '<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer" onclick="Actions.toggleUserExpand(\'' + esc(u.username) + '\')"><div><div style="display:flex;gap:8px;align-items:center"><span style="font-weight:bold">' + esc(u.username) + '</span>' + (u.isSuspended ? ' <span class="susp">SUSPENDED</span>' : '') + '</div><div style="font-size:12px;color:var(--dim);margin-top:2px">@' + esc(u.username) + ' · ' + (u.gamesPlayed || 0) + ' games · ' + (u.wins || 0) + ' wins · ' + (u.draws || 0) + ' draws</div></div><span style="color:var(--dim)">' + ic('chevdown', 14) + '</span></div>' + tr + '</div>';
+      }).join('') || UI.emptyState('No registered users yet.');
+    } else if (S.admin.tab === 1) {
+      let cs = '';
+      if (S.admin.confDelGameId) {
+        const g = games.find(g => g.id === S.admin.confDelGameId);
+        if (g) {
+          cs = '<div class="overlay" onclick="Actions.cancelDeleteGame()"><div class="sheet" onclick="event.stopPropagation()"><div class="sh-handle"></div><div style="padding:20px 16px"><div style="font-size:16px;color:var(--gold);font-weight:bold;margin-bottom:8px">Delete Game?</div><div style="font-size:14px;color:var(--parch);line-height:1.5;margin-bottom:20px">' + esc(dname(g.player1, g)) + ' vs ' + esc(dname(g.player2, g)) + ' on ' + g.date + '.<br>Stats recalculated.</div><div class="btn-row"><button class="btn btn-o" onclick="Actions.cancelDeleteGame()">Cancel</button><button class="btn btn-d" onclick="Actions.doDeleteGame()">Delete</button></div></div></div></div>';
+        }
+      }
+      ct = games.map(g => '<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-size:13px;font-weight:bold">' + esc(dname(g.player1, g)) + ' vs ' + esc(dname(g.player2, g)) + '</div><div style="font-size:12px;color:var(--dim);margin-top:2px">' + g.date + ' · ' + esc(g.scenario || 'Free Battle') + '</div><div style="font-size:13px;color:var(--gold);margin-top:2px;font-weight:bold">' + g.totalVP1 + '–' + g.totalVP2 + '</div></div><button class="btn btn-d btn-sm" style="width:auto;flex-shrink:0;margin-left:12px" onclick="Actions.showDeleteGame(\'' + esc(g.id) + '\')">' + ic('trash', 14) + '</button></div></div>').join('') + (games.length ? '' : UI.emptyState('No games logged.')) + cs;
+    } else if (S.admin.tab === 2) {
+      ct = '<div style="padding:12px 16px 0">' + UI.card('Admin Display Name', UI.formField('Display Name', UI.textInput('admin.name', { value: S.admin.name }))) + UI.card('Change Admin Password', UI.formField('New Password', UI.passwordInput('admin.newPw', { placeholder: 'Leave blank to keep current' })) + UI.formField('Confirm New Password', UI.passwordInput('admin.confPw')) + '<button class="btn btn-g" onclick="Actions.saveAdminProfile()">Save Admin Profile</button>') + '</div>';
+    } else if (S.admin.tab === 3) {
+      const cnt = {}, wc = {}, dc = {};
+      games.forEach(g => {
+        if (!CONFIG.NON_USERS.includes(g.player1)) cnt[g.player1] = (cnt[g.player1] || 0) + 1;
+        if (!CONFIG.NON_USERS.includes(g.player2)) cnt[g.player2] = (cnt[g.player2] || 0) + 1;
+        if (g.winner && !CONFIG.NON_USERS.includes(g.winner)) wc[g.winner] = (wc[g.winner] || 0) + 1;
+        if (g.winner === 'draw') dc[g.winner] = (dc[g.winner] || 0) + 1;
+      });
+      const ta = Object.entries(cnt).sort((a,b) => b[1] - a[1])[0];
+      const tw = Object.entries(wc).sort((a,b) => b[1] - a[1])[0];
+      ct = UI.card('Overview', [['Total Users', ul.length], ['Total Games', games.length], ['Most Active', ta ? (users[ta[0]]?.username || ta[0]) : '—'], ['Leaderboard #1', tw ? (users[tw[0]]?.username || tw[0]) : '—']].map(([l, v]) => UI.statRow(l, v)).join(''));
+    } else if (S.admin.tab === 4) {
+      const userList = Object.values(users).filter(u => !u.isAdmin);
+      const options = '<option value="all">All Users</option>' + userList.map(u => '<option value="' + esc(u.username) + '" ' + (S.admin.exportUser === u.username ? 'selected' : '') + '>' + esc(u.username) + '</option>').join('');
+      ct = '<div style="padding:12px 16px">' +
+        UI.card('Export User Profiles', '<p style="font-size:13px;color:var(--parch);margin-bottom:12px;">Download a JSON file with all registered user profiles (excludes passwords).</p><button class="btn btn-g" onclick="Actions.exportData(\'profiles\')">' + ic('download', 16) + ' Download Profiles</button>') +
+        UI.card('Export All Games', '<p style="font-size:13px;color:var(--parch);margin-bottom:12px;">Download all battle records in JSON format.</p><button class="btn btn-g" onclick="Actions.exportData(\'games_all\')">' + ic('download', 16) + ' Download All Games</button>') +
+        UI.card('Export User Games', '<p style="font-size:13px;color:var(--parch);margin-bottom:12px;">Select a user to download all their games.</p><div class="field"><label class="lbl">Select User</label><select class="tac-select" onchange="S.admin.exportUser=this.value;render(true);">' + options + '</select></div><button class="btn btn-g" onclick="Actions.exportData(\'games_user\')" ' + (S.admin.exportUser === 'all' ? 'disabled style="opacity:0.5;"' : '') + '>' + ic('download', 16) + ' Download User Games</button>') +
+        '</div>';
+    }
+    return '<div class="adm-head"><div style="display:flex;align-items:center;gap:10px">' + ic('crown', 20, '#a07830') + '<div class="adm-title">Grand Marshal\'s Chamber</div></div><div style="font-size:12px;color:var(--gold2);margin-top:3px;font-style:italic">Administrative Access</div></div>' + UI.tabRow(tabs, S.admin.tab, 'Actions.setAdminTab') + ct + UI.spacer();
+  }
+
+  // ─── INIT ──────────────────────────────────────────────────────────
+  async function loadAllData() {
+    const { data: profiles, error: profilesError } = await supabaseClient
+      .from('profiles')
+      .select('*');
+    if (profilesError) throw profilesError;
+    S._allUsers = {};
+    profiles.forEach(p => {
+      S._allUsers[p.username] = {
+        username: p.username,
+        displayName: p.display_name,
+        factions: p.factions || [],
+        isAdmin: p.is_admin,
+        isSuspended: p.is_suspended,
+        joinedAt: p.joined_at,
+        gamesPlayed: p.games_played,
+        wins: p.wins,
+        draws: p.draws,
+      };
+    });
+    if (S.auth.session) {
+      S._allGames = await loadGamesForUser(S.auth.session.username);
+    } else {
+      S._allGames = [];
+    }
+  }
+
+  async function initApp() {
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+      const username = session.user.email.split('@')[0];
+      try {
+        const profile = await loadProfile(username);
+        if (profile) {
+          S.auth.session = {
+            username: profile.username,
+            displayName: profile.display_name,
+            factions: profile.factions || [],
+            isAdmin: profile.is_admin,
+            isSuspended: profile.is_suspended,
+            joinedAt: profile.joined_at,
+            gamesPlayed: profile.games_played,
+            wins: profile.wins,
+            draws: profile.draws,
+          };
+        }
+      } catch (e) {
+        // Profile not found – clear the session and go to login
+        if (e.code === 'PGRST116') {
+          await signOut();
+          S.auth.session = null;
+        } else {
+          throw e;
+        }
+      }
+    }
+    await loadAllData();
+    S.ui.loading = false;
+    render(true);
+  } catch (e) {
+    console.error('Init error:', e);
+    toast('Failed to load data. Please refresh.', true);
+    S.ui.loading = false;
+    render(true);
+  }
+}
+
+  let renderScheduled = false;
+  let forceNextRender = false;
+
+  function render(force, scrollTop) {
+    if (force) forceNextRender = true;
+    if (renderScheduled && !force) return;
+    renderScheduled = true;
+    const scr = document.getElementById('scr');
+    const st = scr ? scr.scrollTop : 0;
+    const targetScroll = (scrollTop !== undefined) ? scrollTop : st;
+    requestAnimationFrame(() => {
+      renderScheduled = false;
+      _doRender();
+      const ns = document.getElementById('scr');
+      if (ns) ns.scrollTop = targetScroll;
+      forceNextRender = false;
+    });
+  }
+
+  function renderPreservingScroll(force) { render(force); }
+
+  function _doRender() {
+    const app = document.getElementById('app');
+    if (!app) return;
+    if (!S.auth.session) {
+      app.innerHTML = renderLogin();
+      S.nav.currentScreen = 'login';
+      return;
+    }
+    if (S.auth.session) {
+      loadDraft(S.auth.session.username).then(draft => {
+        S.ui.draftExists = !!draft;
+      });
+    }
+    const st = getScreenType();
+    if (forceNextRender || S.nav.currentScreen !== st || st.startsWith('log_')) {
+      app.innerHTML = '<div class="screen" id="scr">' + renderScreen() + '</div>' + renderNav();
+      S.nav.currentScreen = st;
+    } else {
+      const scr = document.getElementById('scr');
+      if (scr) scr.innerHTML = renderScreen();
+    }
+    forceNextRender = false;
+  }
+
+  function getScreenType() {
+    if (!S.auth.session) return 'login';
+    switch (S.nav.tab) {
+      case 0: return 'landing';
+      case 1: return 'log_' + S.battle.step;
+      case 2: return 'dashboard';
+      case 3: return 'stats';
+      case 4: return 'leaderboard';
+      case 5: return 'profile';
+      case 6: return S.auth.session.isAdmin ? 'admin' : 'landing';
+      default: return 'landing';
+    }
+  }
+
+  function renderScreen() {
+    switch (S.nav.tab) {
+      case 0: return renderLanding();
+      case 1: return renderLogGame();
+      case 2: return renderDashboard();
+      case 3: return renderStats();
+      case 4: return renderLeaderboard();
+      case 5: return renderProfile();
+      case 6: return S.auth.session.isAdmin ? renderAdmin() : renderLanding();
+      default: return renderLanding();
+    }
+  }
+
+  function renderNav() {
+    const tabs = [
+      { i: 'shield', l: 'Home' },
+      { i: 'swords', l: 'Battle Record' },
+      { i: 'chart', l: 'Records' },
+      { i: 'trophy', l: 'Stats' },
+      { i: 'crown', l: 'Ranks' },
+      { i: 'user', l: 'Profile' }
+    ];
+    if (S.auth.session && S.auth.session.isAdmin) tabs.push({ i: 'lock', l: 'Admin', admin: true });
+    tabs.push({ i: 'logout', l: 'Out', out: true });
+    return '<nav class="bnav">' + tabs.map((t, idx) => {
+      if (t.out) return '<button class="nt" onclick="Actions.logout()">' + ic('logout', 20) + '<span>Out</span></button>';
+      return '<button class="nt ' + (S.nav.tab === idx ? 'on' : '') + (t.admin ? ' admin-tab' : '') + '" onclick="Actions.goToTab(' + idx + ')">' + ic(t.i, 20) + '<span>' + t.l + '</span></button>';
+    }).join('') + '</nav>';
+  }
+
+  initApp();
+
+  window.Actions = Actions;
+  window.ic = ic;
+  window.esc = esc;
+  window.UI = UI;
+  window.TacticManager = TacticManager;
+
+})(); // end IIFE
+</script>
+</body>
+</html>───────────────────────────────────────────────────
