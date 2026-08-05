@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>AoS Battle Tracker</title>
+  <title>AoS Battle Tracker – Supabase</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E🦆%3C/text%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230a0a0a'/%3E%3Ctext y='80' font-size='80'%3E🦆%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230a0a0a'/%3E%3Ctext y='80' font-size='80'%3E🦆%3C/text%3E%3C/svg%3E">
   <style>
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
     :root{
@@ -502,7 +502,8 @@
       statsTab: 0, statsMode: 'wins', statsFactionFilter: 'all', statsTTSFilter: 'all', statsTournamentFilter: 'all', statsDatePreset: '3m',
       modal: null, lbUsers: [], lbSort: 'wins', lbTournamentFilter: 'all',
       modifyGameOpen: false, modifyGameId: null, modifyVP1: '', modifyVP2: '', modifyWinner: '', modifyNotes: '', modifyTTS: false, modifyTournament: false,
-      draftExists: false, activeBattleNoticeShown: false,
+      draftExists: false, draftData: null,   // added for recovery
+      activeBattleNoticeShown: false,
       loading: true
     },
     profile: { name: '', factions: [], init: false, curPw: '', newPw: '', conf: '', delConf: '', showDel: false },
@@ -613,7 +614,7 @@
           displayName: username,
           factions: S.register.factions || []
         });
-        // Sign out to return to the login screen
+        // Sign out to return to login screen
         await signOut();
         S.auth.session = null;
         S.register.user = '';
@@ -1228,38 +1229,44 @@
     },
 
     deleteMyAccount: async function() {
-  if (S.profile.delConf !== S.auth.session.username) {
-    toast("Username doesn't match.", true);
-    return;
-  }
-  const username = S.auth.session.username;
-  const user = DataCache.user(username);
-  const displayName = user?.displayName || username;
+      if (S.profile.delConf !== S.auth.session.username) {
+        toast("Username doesn't match.", true);
+        return;
+      }
+      const username = S.auth.session.username;
+      const user = DataCache.user(username);
+      const displayName = user?.displayName || username;
 
-  // Delete the profile
-  const { error } = await supabaseClient.from('profiles').delete().eq('username', username);
-  if (error) {
-    toast('Delete failed: ' + error.message, true);
-    return;
-  }
+      // 1. First update all games to replace username with '__deleted__'
+      const games = DataCache.games.filter(g => g.player1 === username || g.player2 === username);
+      for (const g of games) {
+        if (g.player1 === username) {
+          g.player1 = '__deleted__';
+          g.displayName1 = displayName;
+        }
+        if (g.player2 === username) {
+          g.player2 = '__deleted__';
+          g.displayName2 = displayName;
+        }
+        await saveGame(g);
+      }
 
-  // Preserve games with __deleted__ placeholder
-  const games = DataCache.games.filter(g => g.player1 === username || g.player2 === username);
-  for (const g of games) {
-    if (g.player1 === username) { g.player1 = '__deleted__'; g.displayName1 = displayName; }
-    if (g.player2 === username) { g.player2 = '__deleted__'; g.displayName2 = displayName; }
-    await saveGame(g);
-  }
+      // 2. Now delete the profile
+      const { error } = await supabaseClient.from('profiles').delete().eq('username', username);
+      if (error) {
+        toast('Delete failed: ' + error.message, true);
+        return;
+      }
 
-  await signOut();
-  S.auth.session = null;
-  S.nav.tab = 0;
-  S.profile.init = false;
-  S._allUsers = {};
-  S._allGames = [];
-  toast('Account deleted. Games preserved.');
-  render(true);
-},
+      await signOut();
+      S.auth.session = null;
+      S.nav.tab = 0;
+      S.profile.init = false;
+      S._allUsers = {};
+      S._allGames = [];
+      toast('Account deleted. Games preserved.');
+      render(true);
+    },
 
     setAdminTab: function(i) { S.admin.tab = i; S.admin.expandedUser = null; render(true); },
 
@@ -1342,26 +1349,35 @@
     cancelDeleteUser: function() { S.admin.confDel = null; S.admin.delInput = ''; render(true); },
 
     doDeleteUser: async function(u) {
-  if (S.admin.delInput !== u) { toast('Username mismatch.', true); return; }
-  const user = DataCache.user(u);
-  const displayName = user?.displayName || u;          // ← save before deletion
+      if (S.admin.delInput !== u) { toast('Username mismatch.', true); return; }
+      const user = DataCache.user(u);
+      const displayName = user?.displayName || u;
 
-  const { error } = await supabaseClient.from('profiles').delete().eq('username', u);
-  if (error) { toast('Delete failed: ' + error.message, true); return; }
+      // 1. Update games first
+      const games = DataCache.games.filter(g => g.player1 === u || g.player2 === u);
+      for (const g of games) {
+        if (g.player1 === u) {
+          g.player1 = '__deleted__';
+          g.displayName1 = displayName;
+        }
+        if (g.player2 === u) {
+          g.player2 = '__deleted__';
+          g.displayName2 = displayName;
+        }
+        await saveGame(g);
+      }
 
-  const games = DataCache.games.filter(g => g.player1 === u || g.player2 === u);
-  for (const g of games) {
-    if (g.player1 === u) { g.player1 = '__deleted__'; g.displayName1 = displayName; }
-    if (g.player2 === u) { g.player2 = '__deleted__'; g.displayName2 = displayName; }
-    await saveGame(g);
-  }
-  await loadAllData();
-  toast('Account deleted. Games preserved.');
-  S.admin.confDel = null;
-  S.admin.delInput = '';
-  S.admin.expandedUser = null;
-  render(true);
-},
+      // 2. Delete profile
+      const { error } = await supabaseClient.from('profiles').delete().eq('username', u);
+      if (error) { toast('Delete failed: ' + error.message, true); return; }
+
+      await loadAllData();
+      toast('Account deleted. Games preserved.');
+      S.admin.confDel = null;
+      S.admin.delInput = '';
+      S.admin.expandedUser = null;
+      render(true);
+    },
 
     showDeleteGame: function(id) { S.admin.confDelGameId = id; render(true); },
     cancelDeleteGame: function() { S.admin.confDelGameId = null; render(true); },
@@ -1412,6 +1428,7 @@
       b._prevTideState = draft._prevTideState || { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
       S.nav.tab = 1;
       S.ui.draftExists = false;
+      S.ui.draftData = null;
       S.ui.activeBattleNoticeShown = false;
       render(true, 0);
     },
@@ -1419,6 +1436,7 @@
     discardDraft: async function() {
       await deleteDraft(S.auth.session.username);
       S.ui.draftExists = false;
+      S.ui.draftData = null;
       const user = S.auth.session;
       S.battle.step = 0;
       S.battle.opponent = null;
@@ -1689,7 +1707,7 @@
       toast('Exported ' + filename);
     }
   };
-  //   // ─── DRAFT MIGRATION ──────────────────────────────────────────────
+  // ─── PART 2 ─────────────────────────────────────────────────────────  // ─── DRAFT MIGRATION ──────────────────────────────────────────────
   function migrateDraft(draft) {
     if (draft.khorne && !draft.khorne.p1) {
       const old = draft.khorne;
@@ -1747,7 +1765,8 @@
       tideState: b.tideState ? { p1: { ...b.tideState.p1 }, p2: { ...b.tideState.p2 } } : null,
       _prevTideState: b._prevTideState ? { p1: { ...b._prevTideState.p1 }, p2: { ...b._prevTideState.p2 } } : null
     };
-    saveDraft(S.auth.session.username, draft);
+    saveDraft(S.auth.session.username, draft)
+      .catch(err => toast('Draft save failed: ' + err.message, true));
   }
   const saveDraftDebounced = debounce(saveBattleDraft, 1000);
 
@@ -2201,16 +2220,16 @@
         return '<div class="landing-card"><div class="game-summary">' + esc(dname(g.player1, g)) + ' ' + g.totalVP1 + ' — ' + g.totalVP2 + ' ' + esc(dname(g.player2, g)) + (isManual ? ' <span class="badge manual-badge">Manual</span>' : '') + (isTTS ? ' <span class="badge tts-badge">TTS</span>' : '') + (isTournament ? ' <span class="badge tournament-badge">Tournament</span>' : '') + (g.winner === 'draw' ? ' <span class="badge draw-badge">Draw</span>' : '') + '</div><div class="game-meta">' + g.date + ' · ' + esc(g.scenario || 'Free Battle') + ' · Winner: ' + esc(winnerText) + '</div><div class="landing-actions"><button class="btn btn-o btn-sm" onclick="Actions.openModifyGame(\'' + g.id + '\')">' + ic('edit', 12) + ' Modify</button></div></div>';
       }).join('');
     }
+
+    // ─── Draft card – uses S.ui.draftData loaded during init ──────
     let draftHTML = '';
-    if (S.ui.draftExists) {
-      loadDraft(S.auth.session.username).then(draft => {
-        if (draft) {
-          const vs = draft.opponentDisplayName || 'Opponent';
-          const rnd = draft.currentRound !== undefined ? 'Round ' + (draft.currentRound + 1) : 'Setup';
-          draftHTML = '<div class="card" style="border-color:var(--gold); background:rgba(201,168,76,.05)"><div class="ct">Unfinished Battle</div><div style="font-size:14px; color:var(--parch)">' + esc(S.auth.session.username) + ' vs ' + esc(vs) + '</div><div style="font-size:12px; color:var(--dim); margin-top:4px">' + rnd + ' · ' + esc(draft.scenario || 'No plan') + '</div><div class="landing-actions" style="margin-top:10px"><button class="btn btn-g btn-sm" onclick="Actions.resumeDraft()">Resume Battle</button><button class="btn btn-o btn-sm" onclick="Actions.discardDraft()">Discard</button></div></div>';
-        }
-      });
+    if (S.ui.draftExists && S.ui.draftData) {
+      const draft = S.ui.draftData;
+      const vs = draft.opponentDisplayName || 'Opponent';
+      const rnd = draft.currentRound !== undefined ? 'Round ' + (draft.currentRound + 1) : 'Setup';
+      draftHTML = '<div class="card" style="border-color:var(--gold); background:rgba(201,168,76,.05)"><div class="ct">Unfinished Battle</div><div style="font-size:14px; color:var(--parch)">' + esc(S.auth.session.username) + ' vs ' + esc(vs) + '</div><div style="font-size:12px; color:var(--dim); margin-top:4px">' + rnd + ' · ' + esc(draft.scenario || 'No plan') + '</div><div class="landing-actions" style="margin-top:10px"><button class="btn btn-g btn-sm" onclick="Actions.resumeDraft()">Resume Battle</button><button class="btn btn-o btn-sm" onclick="Actions.discardDraft()">Discard</button></div></div>';
     }
+
     let modifySheet = '';
     if (S.ui.modifyGameOpen && S.ui.modifyGameId) {
       const g = DataCache.games.find(g => g.id === S.ui.modifyGameId);
@@ -2225,6 +2244,7 @@
           '<div class="btn-row"><button class="btn btn-o" onclick="Actions.closeModifyGame()">Cancel</button><button class="btn btn-g" onclick="Actions.saveModifiedGame()">Save Changes</button></div></div></div></div>';
       }
     }
+
     let manualSheet = '';
     if (S.landing.manualOpen) {
       const oppBtn = '<button class="btn btn-o" onclick="Actions.openManualOpponentSheet()">' + esc(S.landing.manualOpp || 'Select opponent…') + '</button>';
@@ -2243,6 +2263,7 @@
         UI.formField('Notes', UI.textInput('landing.manualNotes', { value: S.landing.manualNotes, placeholder: 'Optional notes' })) +
         '<div class="btn-row"><button class="btn btn-o" onclick="Actions.closeManualEntry()">Cancel</button><button class="btn btn-g" onclick="Actions.saveManualGame()">Save Game</button></div></div></div></div>';
     }
+
     let manualOppSheet = '';
     if (S.landing.opponentSheetOpen) {
       const users = DataCache.users;
@@ -2258,6 +2279,7 @@
       }
       manualOppSheet = '<div class="overlay" onclick="Actions.closeManualOpponentSheet()"><div class="sheet" onclick="event.stopPropagation()"><div class="sh-handle"></div><div class="sh-head">Select Opponent</div><div class="sh-body">' + oi + '</div></div></div>';
     }
+
     return UI.sectionHeader('War Room', 'Your Command Centre') + draftHTML + '<div class="card"><div class="ct">Recent Battles</div>' + recentHTML + '</div><div style="padding:0 16px;display:flex;flex-direction:column;gap:10px"><button class="btn btn-g" onclick="Actions.goToTab(1)">' + ic('swords', 18) + ' New Battle Record</button><button class="btn btn-o" onclick="Actions.openManualEntry()">' + ic('edit', 16) + ' Quick Entry (Manual Scores)</button></div>' + modifySheet + manualSheet + manualOppSheet + UI.spacer();
   }
 
@@ -2599,61 +2621,64 @@
   }
 
   async function initApp() {
-  try {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) {
-      const username = session.user.email.split('@')[0];
-      try {
-        const profile = await loadProfile(username);
-        if (profile) {
-          S.auth.session = {
-            username: profile.username,
-            displayName: profile.display_name,
-            factions: profile.factions || [],
-            isAdmin: profile.is_admin,
-            isSuspended: profile.is_suspended,
-            joinedAt: profile.joined_at,
-            gamesPlayed: profile.games_played,
-            wins: profile.wins,
-            draws: profile.draws,
-          };
-        }
-      } catch (e) {
-        if (e.code === 'PGRST116') {
-          await signOut();
-          S.auth.session = null;
-        } else {
-          throw e;
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session) {
+        const username = session.user.email.split('@')[0];
+        try {
+          const profile = await loadProfile(username);
+          if (profile) {
+            S.auth.session = {
+              username: profile.username,
+              displayName: profile.display_name,
+              factions: profile.factions || [],
+              isAdmin: profile.is_admin,
+              isSuspended: profile.is_suspended,
+              joinedAt: profile.joined_at,
+              gamesPlayed: profile.games_played,
+              wins: profile.wins,
+              draws: profile.draws,
+            };
+          }
+        } catch (e) {
+          if (e.code === 'PGRST116') {
+            await signOut();
+            S.auth.session = null;
+          } else {
+            throw e;
+          }
         }
       }
-    }
-    await loadAllData();
+      await loadAllData();
 
-    // ─── CHECK FOR DRAFT EARLY ──────────────────────────────────────
-    if (S.auth.session) {
-      try {
-        const draft = await loadDraft(S.auth.session.username);
-        S.ui.draftExists = !!draft;
-        if (draft) {
-          toast('💾 Unfinished battle found – resume from Home');
+      // ─── LOAD DRAFT EARLY ───────────────────────────────────────
+      if (S.auth.session) {
+        try {
+          const draft = await loadDraft(S.auth.session.username);
+          S.ui.draftData = draft || null;
+          S.ui.draftExists = !!draft;
+          if (draft) {
+            toast('💾 Unfinished battle found – resume from Home');
+          }
+        } catch (e) {
+          console.warn('Draft load error:', e);
+          S.ui.draftData = null;
+          S.ui.draftExists = false;
         }
-      } catch (e) {
-        console.warn('Draft check error:', e);
+      } else {
+        S.ui.draftData = null;
         S.ui.draftExists = false;
       }
-    } else {
-      S.ui.draftExists = false;
-    }
 
-    S.ui.loading = false;
-    render(true);
-  } catch (e) {
-    console.error('Init error:', e);
-    toast('Failed to load data. Please refresh.', true);
-    S.ui.loading = false;
-    render(true);
+      S.ui.loading = false;
+      render(true);
+    } catch (e) {
+      console.error('Init error:', e);
+      toast('Failed to load data. Please refresh.', true);
+      S.ui.loading = false;
+      render(true);
+    }
   }
-}
 
   let renderScheduled = false;
   let forceNextRender = false;
@@ -2685,9 +2710,7 @@
       return;
     }
     if (S.auth.session) {
-      loadDraft(S.auth.session.username).then(draft => {
-        S.ui.draftExists = !!draft;
-      });
+      // Optional: reload draft if needed (but we already have it)
     }
     const st = getScreenType();
     if (forceNextRender || S.nav.currentScreen !== st || st.startsWith('log_')) {
@@ -2755,4 +2778,4 @@
 })(); // end IIFE
 </script>
 </body>
-  </html>
+</html>
