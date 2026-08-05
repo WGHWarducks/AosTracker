@@ -1228,18 +1228,38 @@
     },
 
     deleteMyAccount: async function() {
-      if (S.profile.delConf !== S.auth.session.username) { toast("Username doesn't match.", true); return; }
-      const { error } = await supabaseClient.from('profiles').delete().eq('username', S.auth.session.username);
-      if (error) { toast('Delete failed.', true); return; }
-      await signOut();
-      S.auth.session = null;
-      S.nav.tab = 0;
-      S.profile.init = false;
-      S._allUsers = {};
-      S._allGames = [];
-      toast('Account deleted.');
-      render(true);
-    },
+  if (S.profile.delConf !== S.auth.session.username) {
+    toast("Username doesn't match.", true);
+    return;
+  }
+  const username = S.auth.session.username;
+  const user = DataCache.user(username);
+  const displayName = user?.displayName || username;
+
+  // Delete the profile
+  const { error } = await supabaseClient.from('profiles').delete().eq('username', username);
+  if (error) {
+    toast('Delete failed: ' + error.message, true);
+    return;
+  }
+
+  // Preserve games with __deleted__ placeholder
+  const games = DataCache.games.filter(g => g.player1 === username || g.player2 === username);
+  for (const g of games) {
+    if (g.player1 === username) { g.player1 = '__deleted__'; g.displayName1 = displayName; }
+    if (g.player2 === username) { g.player2 = '__deleted__'; g.displayName2 = displayName; }
+    await saveGame(g);
+  }
+
+  await signOut();
+  S.auth.session = null;
+  S.nav.tab = 0;
+  S.profile.init = false;
+  S._allUsers = {};
+  S._allGames = [];
+  toast('Account deleted. Games preserved.');
+  render(true);
+},
 
     setAdminTab: function(i) { S.admin.tab = i; S.admin.expandedUser = null; render(true); },
 
