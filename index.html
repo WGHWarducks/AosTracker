@@ -415,30 +415,30 @@
   }
 
   // ─── DRAFT STORAGE (localStorage) ──────────────────────────────────
-function loadDraft(username) {
-  try {
-    const raw = localStorage.getItem('draft_' + username);
-    return raw ? JSON.parse(raw) : null;
-  } catch (e) {
-    return null;
+  function loadDraft(username) {
+    try {
+      const raw = localStorage.getItem('draft_' + username);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
   }
-}
 
-function saveDraft(username, draftData) {
-  try {
-    localStorage.setItem('draft_' + username, JSON.stringify(draftData));
-  } catch (e) {
-    // quota exceeded, etc. – silently fail
+  function saveDraft(username, draftData) {
+    try {
+      localStorage.setItem('draft_' + username, JSON.stringify(draftData));
+    } catch (e) {
+      // Silently handle quota errors
+    }
   }
-}
 
-function deleteDraft(username) {
-  try {
-    localStorage.removeItem('draft_' + username);
-  } catch (e) {
-    // ignore
+  function deleteDraft(username) {
+    try {
+      localStorage.removeItem('draft_' + username);
+    } catch (e) {
+      // ignore
+    }
   }
-}
 
   function usernameToEmail(username) {
     return username.trim() + '@aos-tracker.com';
@@ -503,7 +503,7 @@ function deleteDraft(username) {
       statsTab: 0, statsMode: 'wins', statsFactionFilter: 'all', statsTTSFilter: 'all', statsTournamentFilter: 'all', statsDatePreset: '3m',
       modal: null, lbUsers: [], lbSort: 'wins', lbTournamentFilter: 'all',
       modifyGameOpen: false, modifyGameId: null, modifyVP1: '', modifyVP2: '', modifyWinner: '', modifyNotes: '', modifyTTS: false, modifyTournament: false,
-      draftExists: false, draftData: null,   // added for recovery
+      draftExists: false, draftData: null,
       activeBattleNoticeShown: false,
       loading: true
     },
@@ -882,6 +882,36 @@ function deleteDraft(username) {
       S.battle.lumineth = { p1: { scripture: { strength:0, river:0, wind:0, mountain:0 }, extraRune: false, extraUsed: false }, p2: { scripture: { strength:0, river:0, wind:0, mountain:0 }, extraRune: false, extraUsed: false } };
       S.battle.tideState = { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
       S.battle._prevTideState = { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
+      
+      // Immediate draft save for recovery
+      saveDraft(S.auth.session.username, {
+        step: S.battle.step,
+        opponentUsername: S.battle.opponent.username,
+        opponentDisplayName: S.battle.opponent.displayName,
+        opponentFactions: S.battle.opponent.factions,
+        faction1: S.battle.faction1,
+        faction2: S.battle.faction2,
+        scenario: S.battle.scenario,
+        rounds: S.battle.rounds,
+        currentRound: S.battle.currentRound,
+        winner: S.battle.winner,
+        notes: S.battle.notes,
+        p1Tactics: S.battle.p1Tactics,
+        p2Tactics: S.battle.p2Tactics,
+        tacticProgress: S.battle.tacticProgress,
+        resources: { ...S.battle.resources },
+        underdog: S.battle.underdog,
+        doubleTurn: S.battle.doubleTurn,
+        manualUnderdog: S.battle.manualUnderdog,
+        useFactionTrackers: S.battle.useFactionTrackers,
+        isTTS: S.battle.isTTS,
+        isTournament: S.battle.isTournament,
+        khorne: { p1: { ...S.battle.khorne.p1 }, p2: { ...S.battle.khorne.p2 } },
+        lumineth: { p1: { ...S.battle.lumineth.p1 }, p2: { ...S.battle.lumineth.p2 } },
+        tideState: { p1: { ...S.battle.tideState.p1 }, p2: { ...S.battle.tideState.p2 } },
+        _prevTideState: { p1: { ...S.battle._prevTideState.p1 }, p2: { ...S.battle._prevTideState.p2 } }
+      });
+      
       saveDraftDebounced();
       render(true, 0);
     },
@@ -1400,7 +1430,7 @@ function deleteDraft(username) {
     },
 
     resumeDraft: async function() {
-      const draftData = await loadDraft(S.auth.session.username);
+      const draftData = loadDraft(S.auth.session.username);
       if (!draftData) return;
       const draft = migrateDraft(draftData);
       const b = S.battle;
@@ -1435,7 +1465,7 @@ function deleteDraft(username) {
     },
 
     discardDraft: async function() {
-      await deleteDraft(S.auth.session.username);
+      deleteDraft(S.auth.session.username);
       S.ui.draftExists = false;
       S.ui.draftData = null;
       const user = S.auth.session;
@@ -1766,8 +1796,7 @@ function deleteDraft(username) {
       tideState: b.tideState ? { p1: { ...b.tideState.p1 }, p2: { ...b.tideState.p2 } } : null,
       _prevTideState: b._prevTideState ? { p1: { ...b._prevTideState.p1 }, p2: { ...b._prevTideState.p2 } } : null
     };
-    saveDraft(S.auth.session.username, draft)
-      .catch(err => toast('Draft save failed: ' + err.message, true));
+    saveDraft(S.auth.session.username, draft);
   }
   const saveDraftDebounced = debounce(saveBattleDraft, 1000);
 
@@ -2222,13 +2251,39 @@ function deleteDraft(username) {
       }).join('');
     }
 
-    // ─── Draft card – uses S.ui.draftData loaded during init ──────
+    // ─── DRAFT CARD – reads directly from localStorage ──────────────
     let draftHTML = '';
-    if (S.ui.draftExists && S.ui.draftData) {
-      const draft = S.ui.draftData;
-      const vs = draft.opponentDisplayName || 'Opponent';
-      const rnd = draft.currentRound !== undefined ? 'Round ' + (draft.currentRound + 1) : 'Setup';
-      draftHTML = '<div class="card" style="border-color:var(--gold); background:rgba(201,168,76,.05)"><div class="ct">Unfinished Battle</div><div style="font-size:14px; color:var(--parch)">' + esc(S.auth.session.username) + ' vs ' + esc(vs) + '</div><div style="font-size:12px; color:var(--dim); margin-top:4px">' + rnd + ' · ' + esc(draft.scenario || 'No plan') + '</div><div class="landing-actions" style="margin-top:10px"><button class="btn btn-g btn-sm" onclick="Actions.resumeDraft()">Resume Battle</button><button class="btn btn-o btn-sm" onclick="Actions.discardDraft()">Discard</button></div></div>';
+    if (S.auth.session) {
+      try {
+        const raw = localStorage.getItem('draft_' + S.auth.session.username);
+        if (raw) {
+          const draft = JSON.parse(raw);
+          // Validate it's a real draft (has opponent or faction)
+          if (draft && (draft.opponentUsername || draft.faction1)) {
+            const vs = draft.opponentDisplayName || 'Opponent';
+            const rnd = draft.currentRound !== undefined ? 'Round ' + (draft.currentRound + 1) : 'Setup';
+            draftHTML = '<div class="card" style="border-color:var(--gold); background:rgba(201,168,76,.05)">'
+  + '<div class="ct">Unfinished Battle</div>'
+  + '<div style="font-size:14px; color:var(--parch)">' + esc(S.auth.session.username) + ' vs ' + esc(vs) + '</div>'
+  + '<div style="font-size:12px; color:var(--dim); margin-top:4px">' + rnd + ' · ' + esc(draft.scenario || 'No plan') + '</div>'
+  + '<div class="landing-actions" style="margin-top:10px">'
+  + '<button class="btn btn-g btn-sm" onclick="Actions.resumeDraft()">Resume Battle</button>'
+  + '<button class="btn btn-o btn-sm" onclick="Actions.discardDraft()">Discard</button>'
+  + '</div></div>';
+            // Update state for other parts
+            S.ui.draftData = draft;
+            S.ui.draftExists = true;
+          }
+        } else {
+          // No draft – ensure state is cleared
+          S.ui.draftData = null;
+          S.ui.draftExists = false;
+        }
+      } catch (e) {
+        // ignore parse errors
+        S.ui.draftData = null;
+        S.ui.draftExists = false;
+      }
     }
 
     let modifySheet = '';
@@ -2652,19 +2707,13 @@ function deleteDraft(username) {
       }
       await loadAllData();
 
-      // ─── LOAD DRAFT EARLY ───────────────────────────────────────
+      // ─── LOAD DRAFT EARLY (synchronous) ────────────────────────────
       if (S.auth.session) {
-        try {
-          const draft = await loadDraft(S.auth.session.username);
-          S.ui.draftData = draft || null;
-          S.ui.draftExists = !!draft;
-          if (draft) {
-            toast('💾 Unfinished battle found – resume from Home');
-          }
-        } catch (e) {
-          console.warn('Draft load error:', e);
-          S.ui.draftData = null;
-          S.ui.draftExists = false;
+        const draft = loadDraft(S.auth.session.username);
+        S.ui.draftData = draft || null;
+        S.ui.draftExists = !!draft;
+        if (draft) {
+          toast('💾 Unfinished battle found – resume from Home');
         }
       } else {
         S.ui.draftData = null;
@@ -2709,9 +2758,6 @@ function deleteDraft(username) {
       app.innerHTML = renderLogin();
       S.nav.currentScreen = 'login';
       return;
-    }
-    if (S.auth.session) {
-      // Optional: reload draft if needed (but we already have it)
     }
     const st = getScreenType();
     if (forceNextRender || S.nav.currentScreen !== st || st.startsWith('log_')) {
