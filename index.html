@@ -2629,10 +2629,18 @@
     }
     await loadAllData();
 
-    // ─── NEW: Check for existing draft ──────────────────────────────
+    // ─── CHECK FOR DRAFT EARLY ──────────────────────────────────────
     if (S.auth.session) {
-      const draft = await loadDraft(S.auth.session.username);
-      S.ui.draftExists = !!draft;
+      try {
+        const draft = await loadDraft(S.auth.session.username);
+        S.ui.draftExists = !!draft;
+        if (draft) {
+          toast('💾 Unfinished battle found – resume from Home');
+        }
+      } catch (e) {
+        console.warn('Draft check error:', e);
+        S.ui.draftExists = false;
+      }
     } else {
       S.ui.draftExists = false;
     }
