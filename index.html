@@ -1342,22 +1342,26 @@
     cancelDeleteUser: function() { S.admin.confDel = null; S.admin.delInput = ''; render(true); },
 
     doDeleteUser: async function(u) {
-      if (S.admin.delInput !== u) { toast('Username mismatch.', true); return; }
-      const { error } = await supabaseClient.from('profiles').delete().eq('username', u);
-      if (error) { toast('Delete failed.', true); return; }
-      const games = DataCache.games.filter(g => g.player1 === u || g.player2 === u);
-      for (const g of games) {
-        if (g.player1 === u) { g.player1 = '__deleted__'; g.displayName1 = DataCache.user(u)?.displayName || u; }
-        if (g.player2 === u) { g.player2 = '__deleted__'; g.displayName2 = DataCache.user(u)?.displayName || u; }
-        await saveGame(g);
-      }
-      await loadAllData();
-      toast('Account deleted. Games preserved.');
-      S.admin.confDel = null;
-      S.admin.delInput = '';
-      S.admin.expandedUser = null;
-      render(true);
-    },
+  if (S.admin.delInput !== u) { toast('Username mismatch.', true); return; }
+  const user = DataCache.user(u);
+  const displayName = user?.displayName || u;          // ← save before deletion
+
+  const { error } = await supabaseClient.from('profiles').delete().eq('username', u);
+  if (error) { toast('Delete failed: ' + error.message, true); return; }
+
+  const games = DataCache.games.filter(g => g.player1 === u || g.player2 === u);
+  for (const g of games) {
+    if (g.player1 === u) { g.player1 = '__deleted__'; g.displayName1 = displayName; }
+    if (g.player2 === u) { g.player2 = '__deleted__'; g.displayName2 = displayName; }
+    await saveGame(g);
+  }
+  await loadAllData();
+  toast('Account deleted. Games preserved.');
+  S.admin.confDel = null;
+  S.admin.delInput = '';
+  S.admin.expandedUser = null;
+  render(true);
+},
 
     showDeleteGame: function(id) { S.admin.confDelGameId = id; render(true); },
     cancelDeleteGame: function() { S.admin.confDelGameId = null; render(true); },
