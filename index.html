@@ -414,30 +414,31 @@
     if (error) throw error;
   }
 
-  async function loadDraft(username) {
-    const { data, error } = await supabaseClient
-      .from('drafts')
-      .select('draft_data')
-      .eq('username', username)
-      .single();
-    if (error && error.code !== 'PGRST116') throw error;
-    return data ? data.draft_data : null;
+  // ─── DRAFT STORAGE (localStorage) ──────────────────────────────────
+function loadDraft(username) {
+  try {
+    const raw = localStorage.getItem('draft_' + username);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
   }
+}
 
-  async function saveDraft(username, draftData) {
-    const { error } = await supabaseClient
-      .from('drafts')
-      .upsert({ username, draft_data: draftData, updated_at: new Date().toISOString() });
-    if (error) throw error;
+function saveDraft(username, draftData) {
+  try {
+    localStorage.setItem('draft_' + username, JSON.stringify(draftData));
+  } catch (e) {
+    // quota exceeded, etc. – silently fail
   }
+}
 
-  async function deleteDraft(username) {
-    const { error } = await supabaseClient
-      .from('drafts')
-      .delete()
-      .eq('username', username);
-    if (error) throw error;
+function deleteDraft(username) {
+  try {
+    localStorage.removeItem('draft_' + username);
+  } catch (e) {
+    // ignore
   }
+}
 
   function usernameToEmail(username) {
     return username.trim() + '@aos-tracker.com';
