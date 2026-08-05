@@ -2599,44 +2599,53 @@
   }
 
   async function initApp() {
-    try {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (session) {
-        const username = session.user.email.split('@')[0];
-        try {
-          const profile = await loadProfile(username);
-          if (profile) {
-            S.auth.session = {
-              username: profile.username,
-              displayName: profile.display_name,
-              factions: profile.factions || [],
-              isAdmin: profile.is_admin,
-              isSuspended: profile.is_suspended,
-              joinedAt: profile.joined_at,
-              gamesPlayed: profile.games_played,
-              wins: profile.wins,
-              draws: profile.draws,
-            };
-          }
-        } catch (e) {
-          if (e.code === 'PGRST116') {
-            await signOut();
-            S.auth.session = null;
-          } else {
-            throw e;
-          }
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+      const username = session.user.email.split('@')[0];
+      try {
+        const profile = await loadProfile(username);
+        if (profile) {
+          S.auth.session = {
+            username: profile.username,
+            displayName: profile.display_name,
+            factions: profile.factions || [],
+            isAdmin: profile.is_admin,
+            isSuspended: profile.is_suspended,
+            joinedAt: profile.joined_at,
+            gamesPlayed: profile.games_played,
+            wins: profile.wins,
+            draws: profile.draws,
+          };
+        }
+      } catch (e) {
+        if (e.code === 'PGRST116') {
+          await signOut();
+          S.auth.session = null;
+        } else {
+          throw e;
         }
       }
-      await loadAllData();
-      S.ui.loading = false;
-      render(true);
-    } catch (e) {
-      console.error('Init error:', e);
-      toast('Failed to load data. Please refresh.', true);
-      S.ui.loading = false;
-      render(true);
     }
+    await loadAllData();
+
+    // ─── NEW: Check for existing draft ──────────────────────────────
+    if (S.auth.session) {
+      const draft = await loadDraft(S.auth.session.username);
+      S.ui.draftExists = !!draft;
+    } else {
+      S.ui.draftExists = false;
+    }
+
+    S.ui.loading = false;
+    render(true);
+  } catch (e) {
+    console.error('Init error:', e);
+    toast('Failed to load data. Please refresh.', true);
+    S.ui.loading = false;
+    render(true);
   }
+}
 
   let renderScheduled = false;
   let forceNextRender = false;
