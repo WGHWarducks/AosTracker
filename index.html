@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
   <title>AoS Battle Tracker – Supabase</title>
   <style>
-    <title>AoS Battle Tracker</title>
-  <style>
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
     :root{
       --bg:#0a0a0a;--bg2:#111;--bg3:#181818;--bg4:#222;
@@ -602,33 +600,33 @@
     },
 
     register: async function() {
-  const username = getInputValue('register.user') || S.register.user;
-  const password = getInputValue('register.pw') || S.register.pw;
-  const confirm = getInputValue('register.conf') || S.register.conf;
-  if (!username) { S.register.error = 'Username required.'; render(true); return; }
-  if (!password || password.length < 6) { S.register.error = 'Password must be at least 6 characters.'; render(true); return; }
-  if (password !== confirm) { S.register.error = "Passwords don't match."; render(true); return; }
-  try {
-    await signUp(username, password, {
-      displayName: username,
-      factions: S.register.factions || []
-    });
-    // Sign out to return to the login screen
-    await signOut();
-    S.auth.session = null;
-    S.register.user = '';
-    S.register.pw = '';
-    S.register.conf = '';
-    S.register.factions = [];
-    S.register.error = '';
-    S.auth.loginMode = 'login';
-    toast('Account created! Please log in.');
-    render(true);
-  } catch (e) {
-    S.register.error = e.message || 'Registration failed. Please try a different username.';
-    render(true);
-  }
-},
+      const username = getInputValue('register.user') || S.register.user;
+      const password = getInputValue('register.pw') || S.register.pw;
+      const confirm = getInputValue('register.conf') || S.register.conf;
+      if (!username) { S.register.error = 'Username required.'; render(true); return; }
+      if (!password || password.length < 6) { S.register.error = 'Password must be at least 6 characters.'; render(true); return; }
+      if (password !== confirm) { S.register.error = "Passwords don't match."; render(true); return; }
+      try {
+        await signUp(username, password, {
+          displayName: username,
+          factions: S.register.factions || []
+        });
+        // Sign out to return to the login screen
+        await signOut();
+        S.auth.session = null;
+        S.register.user = '';
+        S.register.pw = '';
+        S.register.conf = '';
+        S.register.factions = [];
+        S.register.error = '';
+        S.auth.loginMode = 'login';
+        toast('Account created! Please log in.');
+        render(true);
+      } catch (e) {
+        S.register.error = e.message || 'Registration failed. Please try a different username.';
+        render(true);
+      }
+    },
 
     logout: async function() {
       await signOut();
@@ -1665,7 +1663,7 @@
       toast('Exported ' + filename);
     }
   };
-  // ─── PART 2 ──────  // ─── DRAFT MIGRATION ──────────────────────────────────────────────
+  //   // ─── DRAFT MIGRATION ──────────────────────────────────────────────
   function migrateDraft(draft) {
     if (draft.khorne && !draft.khorne.p1) {
       const old = draft.khorne;
@@ -1692,7 +1690,6 @@
 
   function clearDraft() { if (S.auth.session) deleteDraft(S.auth.session.username); }
 
-  // Renamed from saveDraft to avoid conflict with the async Supabase version
   function saveBattleDraft() {
     if (!S.auth.session) return;
     const b = S.battle;
@@ -1724,7 +1721,6 @@
       tideState: b.tideState ? { p1: { ...b.tideState.p1 }, p2: { ...b.tideState.p2 } } : null,
       _prevTideState: b._prevTideState ? { p1: { ...b._prevTideState.p1 }, p2: { ...b._prevTideState.p2 } } : null
     };
-    // Call the async Supabase version (which is still named saveDraft)
     saveDraft(S.auth.session.username, draft);
   }
   const saveDraftDebounced = debounce(saveBattleDraft, 1000);
@@ -2577,45 +2573,44 @@
   }
 
   async function initApp() {
-  try {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) {
-      const username = session.user.email.split('@')[0];
-      try {
-        const profile = await loadProfile(username);
-        if (profile) {
-          S.auth.session = {
-            username: profile.username,
-            displayName: profile.display_name,
-            factions: profile.factions || [],
-            isAdmin: profile.is_admin,
-            isSuspended: profile.is_suspended,
-            joinedAt: profile.joined_at,
-            gamesPlayed: profile.games_played,
-            wins: profile.wins,
-            draws: profile.draws,
-          };
-        }
-      } catch (e) {
-        // Profile not found – clear the session and go to login
-        if (e.code === 'PGRST116') {
-          await signOut();
-          S.auth.session = null;
-        } else {
-          throw e;
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session) {
+        const username = session.user.email.split('@')[0];
+        try {
+          const profile = await loadProfile(username);
+          if (profile) {
+            S.auth.session = {
+              username: profile.username,
+              displayName: profile.display_name,
+              factions: profile.factions || [],
+              isAdmin: profile.is_admin,
+              isSuspended: profile.is_suspended,
+              joinedAt: profile.joined_at,
+              gamesPlayed: profile.games_played,
+              wins: profile.wins,
+              draws: profile.draws,
+            };
+          }
+        } catch (e) {
+          if (e.code === 'PGRST116') {
+            await signOut();
+            S.auth.session = null;
+          } else {
+            throw e;
+          }
         }
       }
+      await loadAllData();
+      S.ui.loading = false;
+      render(true);
+    } catch (e) {
+      console.error('Init error:', e);
+      toast('Failed to load data. Please refresh.', true);
+      S.ui.loading = false;
+      render(true);
     }
-    await loadAllData();
-    S.ui.loading = false;
-    render(true);
-  } catch (e) {
-    console.error('Init error:', e);
-    toast('Failed to load data. Please refresh.', true);
-    S.ui.loading = false;
-    render(true);
   }
-}
 
   let renderScheduled = false;
   let forceNextRender = false;
@@ -2717,4 +2712,4 @@
 })(); // end IIFE
 </script>
 </body>
-</html>───────────────────────────────────────────────────
+  </html>
