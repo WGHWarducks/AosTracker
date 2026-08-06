@@ -2250,20 +2250,20 @@
   }
 
   function renderLogConfirm() {
-  const vp1 = S.battle.rounds.reduce((s, x) => s + (x.vp1 || 0), 0);
-  const vp2 = S.battle.rounds.reduce((s, x) => s + (x.vp2 || 0), 0);
-  const w1 = S.battle.winner === S.auth.session.username;
-  const w2 = S.battle.winner === S.battle.opponent?.username;
-  const wDraw = S.battle.winner === 'draw';
-  return UI.sectionHeader('Battle Concluded') + 
-    UI.card('Final Score', '<div style="display:flex;justify-content:center;align-items:center;gap:20px;padding:12px 0"><div style="text-align:center"><div style="font-size:13px;font-weight:bold">' + esc(S.auth.session.username) + '</div><div class="score-total" style="font-size:44px">' + vp1 + '</div></div><div style="color:var(--dim);font-weight:bold">VS</div><div style="text-align:center"><div style="font-size:13px;font-weight:bold">' + esc(S.battle.opponent ? S.battle.opponent.displayName : 'Opponent') + '</div><div class="score-total" style="font-size:44px">' + vp2 + '</div></div></div>') + 
-    UI.card('Declare Victor', '<div class="btn-row"><button class="btn ' + (w1 ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'' + esc(S.auth.session.username) + '\')">' + ic('trophy', 15) + ' ' + esc(S.auth.session.username) + '</button><button class="btn ' + (w2 ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'' + esc(S.battle.opponent ? S.battle.opponent.username : '') + '\')">' + ic('trophy', 15) + ' ' + esc(S.battle.opponent ? S.battle.opponent.displayName : 'Opponent') + '</button><button class="btn ' + (wDraw ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'draw\')">' + ic('trophy', 15) + ' Draw</button></div>') + 
-    '<div style="padding:0 16px">' + 
-    UI.formField('Battle Notes (optional)', '<textarea class="inp" data-bind="battle.notes" rows="3" placeholder="How did it go?">' + esc(S.battle.notes) + '</textarea>') + 
-    '<button class="btn btn-g" id="saveGameBtn" onclick="Actions.saveGame()" ' + (!S.battle.winner ? 'disabled style="opacity:.5"' : '') + '>' + ic('check', 16) + ' Save Battle</button>' + 
-    '<button class="btn btn-o" style="margin-top:10px" onclick="Actions.backToScore()">Back to Score</button>' + 
-    '</div>';
-}
+    const vp1 = S.battle.rounds.reduce((s, x) => s + (x.vp1 || 0), 0);
+    const vp2 = S.battle.rounds.reduce((s, x) => s + (x.vp2 || 0), 0);
+    const w1 = S.battle.winner === S.auth.session.username;
+    const w2 = S.battle.winner === S.battle.opponent?.username;
+    const wDraw = S.battle.winner === 'draw';
+    return UI.sectionHeader('Battle Concluded') + 
+      UI.card('Final Score', '<div style="display:flex;justify-content:center;align-items:center;gap:20px;padding:12px 0"><div style="text-align:center"><div style="font-size:13px;font-weight:bold">' + esc(S.auth.session.username) + '</div><div class="score-total" style="font-size:44px">' + vp1 + '</div></div><div style="color:var(--dim);font-weight:bold">VS</div><div style="text-align:center"><div style="font-size:13px;font-weight:bold">' + esc(S.battle.opponent ? S.battle.opponent.displayName : 'Opponent') + '</div><div class="score-total" style="font-size:44px">' + vp2 + '</div></div></div>') + 
+      UI.card('Declare Victor', '<div class="btn-row"><button class="btn ' + (w1 ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'' + esc(S.auth.session.username) + '\')">' + ic('trophy', 15) + ' ' + esc(S.auth.session.username) + '</button><button class="btn ' + (w2 ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'' + esc(S.battle.opponent ? S.battle.opponent.username : '') + '\')">' + ic('trophy', 15) + ' ' + esc(S.battle.opponent ? S.battle.opponent.displayName : 'Opponent') + '</button><button class="btn ' + (wDraw ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'draw\')">' + ic('trophy', 15) + ' Draw</button></div>') + 
+      '<div style="padding:0 16px">' + 
+      UI.formField('Battle Notes (optional)', '<textarea class="inp" data-bind="battle.notes" rows="3" placeholder="How did it go?">' + esc(S.battle.notes) + '</textarea>') + 
+      '<button class="btn btn-g" id="saveGameBtn" onclick="Actions.saveGame()" ' + (!S.battle.winner ? 'disabled style="opacity:.5"' : '') + '>' + ic('check', 16) + ' Save Battle</button>' + 
+      '<button class="btn btn-o" style="margin-top:10px" onclick="Actions.backToScore()">Back to Score</button>' + 
+      '</div>';
+  }
 
   function renderLanding() {
     const games = DataCache.games;
@@ -2272,11 +2272,11 @@
     if (myGames.length === 0) { recentHTML = UI.emptyState('No battles recorded yet.'); }
     else {
       recentHTML = myGames.map(g => {
-        const isManual = g.manuallyEntered || g.manuallyUpdated;
-        const isTTS = g.isTTS;
-        const isTournament = g.isTournament;
+        const isManual = g.manuallyentered || g.manuallyupdated;
+        const isTTS = g.istts;
+        const isTournament = g.istournament;
         const winnerText = g.winner === 'draw' ? 'Draw' : dname(g.winner, g);
-        return '<div class="landing-card"><div class="game-summary">' + esc(dname(g.player1, g)) + ' ' + g.totalVP1 + ' — ' + g.totalVP2 + ' ' + esc(dname(g.player2, g)) + (isManual ? ' <span class="badge manual-badge">Manual</span>' : '') + (isTTS ? ' <span class="badge tts-badge">TTS</span>' : '') + (isTournament ? ' <span class="badge tournament-badge">Tournament</span>' : '') + (g.winner === 'draw' ? ' <span class="badge draw-badge">Draw</span>' : '') + '</div><div class="game-meta">' + g.date + ' · ' + esc(g.scenario || 'Free Battle') + ' · Winner: ' + esc(winnerText) + '</div><div class="landing-actions"><button class="btn btn-o btn-sm" onclick="Actions.openModifyGame(\'' + g.id + '\')">' + ic('edit', 12) + ' Modify</button></div></div>';
+        return '<div class="landing-card"><div class="game-summary">' + esc(dname(g.player1, g)) + ' ' + g.totalvp1 + ' — ' + g.totalvp2 + ' ' + esc(dname(g.player2, g)) + (isManual ? ' <span class="badge manual-badge">Manual</span>' : '') + (isTTS ? ' <span class="badge tts-badge">TTS</span>' : '') + (isTournament ? ' <span class="badge tournament-badge">Tournament</span>' : '') + (g.winner === 'draw' ? ' <span class="badge draw-badge">Draw</span>' : '') + '</div><div class="game-meta">' + g.date + ' · ' + esc(g.scenario || 'Free Battle') + ' · Winner: ' + esc(winnerText) + '</div><div class="landing-actions"><button class="btn btn-o btn-sm" onclick="Actions.openModifyGame(\'' + g.id + '\')">' + ic('edit', 12) + ' Modify</button></div></div>';
       }).join('');
     }
 
@@ -2287,7 +2287,6 @@
         const raw = localStorage.getItem('draft_' + S.auth.session.username);
         if (raw) {
           const draft = JSON.parse(raw);
-          // Validate it's a real draft (has opponent or faction)
           if (draft && (draft.opponentUsername || draft.faction1)) {
             const vs = draft.opponentDisplayName || 'Opponent';
             const rnd = draft.currentRound !== undefined ? 'Round ' + (draft.currentRound + 1) : 'Setup';
@@ -2299,17 +2298,14 @@
               + '<button class="btn btn-g btn-sm" onclick="Actions.resumeDraft()">Resume Battle</button>'
               + '<button class="btn btn-o btn-sm" onclick="Actions.discardDraft()">Discard</button>'
               + '</div></div>';
-            // Update state for other parts
             S.ui.draftData = draft;
             S.ui.draftExists = true;
           }
         } else {
-          // No draft – ensure state is cleared
           S.ui.draftData = null;
           S.ui.draftExists = false;
         }
       } catch (e) {
-        // ignore parse errors
         S.ui.draftData = null;
         S.ui.draftExists = false;
       }
@@ -2391,13 +2387,13 @@
     const cards = fg.map(g => {
       const wn = dname(g.winner, g);
       const exp = S.ui.expandedGame === g.id;
-      const isManual = g.manuallyEntered || g.manuallyUpdated;
-      const isTournament = g.isTournament;
+      const isManual = g.manuallyentered || g.manuallyupdated;
+      const isTournament = g.istournament;
       const winnerDisplay = g.winner === 'draw' ? 'Draw' : wn;
       const detail = exp ? '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bdr)">' + g.rounds.map((r, i) => UI.statRow('Round ' + (i+1), (r.vp1 || 0) + ' — ' + (r.vp2 || 0) + ' (P:' + (r.p1 || 0) + ' T:' + (r.t1 || 0) + ')')).join('') + (g.notes ? '<div style="margin-top:10px;padding:10px;background:var(--bg3);border-radius:6px;font-style:italic;font-size:13px;color:var(--parch)">"' + esc(g.notes) + '"</div>' : '') + '</div>' : '';
-      const col1 = gaColor(g.grandAlliance1);
-      const col2 = gaColor(g.grandAlliance2);
-      return '<div class="card game-card"><div style="display:flex;justify-content:space-between;align-items:flex-start" onclick="Actions.toggleGameExpand(\'' + g.id + '\')"><div style="flex:1;min-width:0"><div class="gvs">' + esc(dname(g.player1, g)) + ' vs ' + esc(dname(g.player2, g)) + '</div><div style="font-size:12px;color:var(--dim);margin-top:2px">' + g.date + ' · ' + esc(g.scenario || 'Free Battle') + (g.isTTS ? ' <span class="badge tts-badge">TTS</span>' : '') + (isTournament ? ' <span class="badge tournament-badge">Tournament</span>' : '') + (isManual ? ' <span class="badge manual-badge">Manual</span>' : '') + (g.winner === 'draw' ? ' <span class="badge draw-badge">Draw</span>' : '') + '</div><div style="margin-top:5px"><span class="badge" style="background:' + col1 + '22;color:' + col1 + ';border:1px solid ' + col1 + '44;font-size:9px">' + esc(g.faction1) + '</span> <span class="badge" style="background:' + col2 + '22;color:' + col2 + ';border:1px solid ' + col2 + '44;font-size:9px">' + esc(g.faction2) + '</span></div></div><div style="text-align:right;flex-shrink:0;margin-left:12px"><div class="gscore">' + g.totalVP1 + '–' + g.totalVP2 + '</div><div style="font-size:11px;color:var(--gold);margin-top:3px">' + ic('trophy', 11) + ' ' + esc(winnerDisplay) + '</div><div style="margin-top:4px;color:var(--dim)">' + ic('chevdown', 14) + '</div></div></div>' + detail + '</div>';
+      const col1 = gaColor(g.grandalliance1);
+      const col2 = gaColor(g.grandalliance2);
+      return '<div class="card game-card"><div style="display:flex;justify-content:space-between;align-items:flex-start" onclick="Actions.toggleGameExpand(\'' + g.id + '\')"><div style="flex:1;min-width:0"><div class="gvs">' + esc(dname(g.player1, g)) + ' vs ' + esc(dname(g.player2, g)) + '</div><div style="font-size:12px;color:var(--dim);margin-top:2px">' + g.date + ' · ' + esc(g.scenario || 'Free Battle') + (g.istts ? ' <span class="badge tts-badge">TTS</span>' : '') + (isTournament ? ' <span class="badge tournament-badge">Tournament</span>' : '') + (isManual ? ' <span class="badge manual-badge">Manual</span>' : '') + (g.winner === 'draw' ? ' <span class="badge draw-badge">Draw</span>' : '') + '</div><div style="margin-top:5px"><span class="badge" style="background:' + col1 + '22;color:' + col1 + ';border:1px solid ' + col1 + '44;font-size:9px">' + esc(g.faction1) + '</span> <span class="badge" style="background:' + col2 + '22;color:' + col2 + ';border:1px solid ' + col2 + '44;font-size:9px">' + esc(g.faction2) + '</span></div></div><div style="text-align:right;flex-shrink:0;margin-left:12px"><div class="gscore">' + g.totalvp1 + '–' + g.totalvp2 + '</div><div style="font-size:11px;color:var(--gold);margin-top:3px">' + ic('trophy', 11) + ' ' + esc(winnerDisplay) + '</div><div style="margin-top:4px;color:var(--dim)">' + ic('chevdown', 14) + '</div></div></div>' + detail + '</div>';
     }).join('');
     return UI.sectionHeader('Battle Records') + UI.chips(ci, S.ui.dashFilter) + sum + (fg.length ? cards : UI.emptyState('No battles recorded yet.')) + UI.spacer();
   }
@@ -2438,13 +2434,13 @@
     const ownFactionsSet = new Set();
     allGames.forEach(g => { const myFaction = g.player1 === mu ? g.faction1 : g.faction2; if (myFaction) ownFactionsSet.add(myFaction); });
     const ownFactions = [...ownFactionsSet].sort();
-    const hasTTS = allGames.some(g => g.isTTS);
-    const hasTournament = allGames.some(g => g.isTournament);
+    const hasTTS = allGames.some(g => g.istts);
+    const hasTournament = allGames.some(g => g.istournament);
     let myGames = allGames;
-    if (S.ui.statsTTSFilter === 'tts') myGames = myGames.filter(g => g.isTTS);
-    else if (S.ui.statsTTSFilter === 'tabletop') myGames = myGames.filter(g => !g.isTTS);
-    if (S.ui.statsTournamentFilter === 'tournament') myGames = myGames.filter(g => g.isTournament);
-    else if (S.ui.statsTournamentFilter === 'casual') myGames = myGames.filter(g => !g.isTournament);
+    if (S.ui.statsTTSFilter === 'tts') myGames = myGames.filter(g => g.istts);
+    else if (S.ui.statsTTSFilter === 'tabletop') myGames = myGames.filter(g => !g.istts);
+    if (S.ui.statsTournamentFilter === 'tournament') myGames = myGames.filter(g => g.istournament);
+    else if (S.ui.statsTournamentFilter === 'casual') myGames = myGames.filter(g => !g.istournament);
     const factionFilter = S.ui.statsFactionFilter;
     if (factionFilter && factionFilter !== 'all') {
       myGames = myGames.filter(g => { const myFaction = g.player1 === mu ? g.faction1 : g.faction2; return myFaction === factionFilter; });
@@ -2528,8 +2524,8 @@
     } else if (S.ui.statsTab === 2) {
       const ts = {}; CONFIG.BATTLE_TACTICS.forEach(t => { ts[t.name] = { w:0, l:0, d:0 }; });
       myGames.forEach(g => {
-        const p1Tactics = g.p1TacticsUsed || [];
-        const p2Tactics = g.p2TacticsUsed || [];
+        const p1Tactics = g.p1tacticsused || [];
+        const p2Tactics = g.p2tacticsused || [];
         const isP1 = g.player1 === mu;
         const myTactics = isP1 ? p1Tactics : p2Tactics;
         myTactics.forEach(tn => { if (ts[tn]) { if (g.winner === mu) ts[tn].w++; else if (g.winner === 'draw') ts[tn].d++; else ts[tn].l++; } });
@@ -2563,9 +2559,9 @@
     let ul = Object.values(users).filter(u => !u.isAdmin);
     const lb = ul.map(u => {
       let mg = games.filter(g => (g.player1 === u.username || g.player2 === u.username));
-      mg = mg.filter(g => !g.isTTS);
-      if (filter === 'tournament') mg = mg.filter(g => g.isTournament);
-      else if (filter === 'casual') mg = mg.filter(g => !g.isTournament);
+      mg = mg.filter(g => !g.istts);
+      if (filter === 'tournament') mg = mg.filter(g => g.istournament);
+      else if (filter === 'casual') mg = mg.filter(g => !g.istournament);
       const wins = mg.filter(g => g.winner === u.username).length;
       const draws = mg.filter(g => g.winner === 'draw').length;
       const losses = mg.length - wins - draws;
@@ -2581,12 +2577,12 @@
     else if (S.ui.lbSort === 'name') lb.sort((a,b) => a.username.localeCompare(b.username));
     S.ui.lbUsers = lb;
     let gg = games.filter(g => g.player1 === CONFIG.SPECIAL_USERS.GUEST || g.player2 === CONFIG.SPECIAL_USERS.GUEST);
-    gg = gg.filter(g => !g.isTTS);
-    if (filter === 'tournament') gg = gg.filter(g => g.isTournament);
-    else if (filter === 'casual') gg = gg.filter(g => !g.isTournament);
+    gg = gg.filter(g => !g.istts);
+    if (filter === 'tournament') gg = gg.filter(g => g.istournament);
+    else if (filter === 'casual') gg = gg.filter(g => !g.istournament);
     const gw = gg.filter(g => g.winner === CONFIG.SPECIAL_USERS.GUEST).length;
     const gd = gg.filter(g => g.winner === 'draw').length;
-    const gn = [...new Set(gg.map(g => g.guestName).filter(Boolean))];
+    const gn = [...new Set(gg.map(g => g.guestname).filter(Boolean))];
     const so = [{ value: 'wins', label: 'Wins' }, { value: 'ratio', label: 'Win Ratio' }, { value: 'name', label: 'Name' }];
     const lbFilterChips = [{ value: 'all', label: 'All' }, { value: 'casual', label: 'Casual' }, { value: 'tournament', label: 'Tournament' }];
     const filterRow = '<div class="sort-row" style="justify-content:center;gap:6px;padding:4px 16px 8px">' + lbFilterChips.map(c => '<div class="sort-chip' + (S.ui.lbTournamentFilter === c.value ? ' on' : '') + '" onclick="Actions.setLbTournamentFilter(\'' + c.value + '\')">' + c.label + '</div>').join('') + '</div>';
@@ -2598,7 +2594,7 @@
       md = '<div class="overlay" onclick="Actions.closeModal()"><div class="sheet" onclick="event.stopPropagation()"><div class="sh-handle"></div><div class="sh-head">' + esc(u.username) + '</div><div class="sh-body" style="padding:0 16px 16px">' + [['Games Played', u.gp], ['Wins', u.wins], ['Draws', u.draws], ['Losses', u.losses], ['Win %', u.pct + '%'], ['Grand Alliance', u.ga || '—'], ['Favourite Faction', u.fav || '—']].map(([l, v]) => UI.statRow(l, v)).join('') + '</div></div></div>';
     } else if (S.ui.modal?.type === 'guests') {
       const rows = gn.map(n => {
-        const ng = gg.filter(g => g.guestName === n);
+        const ng = gg.filter(g => g.guestname === n);
         const nw = ng.filter(g => g.winner === CONFIG.SPECIAL_USERS.GUEST).length;
         const nd = ng.filter(g => g.winner === 'draw').length;
         return UI.statRow(n, nw + 'W ' + nd + 'D ' + (ng.length - nw - nd) + 'L');
@@ -2652,7 +2648,7 @@
           cs = '<div class="overlay" onclick="Actions.cancelDeleteGame()"><div class="sheet" onclick="event.stopPropagation()"><div class="sh-handle"></div><div style="padding:20px 16px"><div style="font-size:16px;color:var(--gold);font-weight:bold;margin-bottom:8px">Delete Game?</div><div style="font-size:14px;color:var(--parch);line-height:1.5;margin-bottom:20px">' + esc(dname(g.player1, g)) + ' vs ' + esc(dname(g.player2, g)) + ' on ' + g.date + '.<br>Stats recalculated.</div><div class="btn-row"><button class="btn btn-o" onclick="Actions.cancelDeleteGame()">Cancel</button><button class="btn btn-d" onclick="Actions.doDeleteGame()">Delete</button></div></div></div></div>';
         }
       }
-      ct = games.map(g => '<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-size:13px;font-weight:bold">' + esc(dname(g.player1, g)) + ' vs ' + esc(dname(g.player2, g)) + '</div><div style="font-size:12px;color:var(--dim);margin-top:2px">' + g.date + ' · ' + esc(g.scenario || 'Free Battle') + '</div><div style="font-size:13px;color:var(--gold);margin-top:2px;font-weight:bold">' + g.totalVP1 + '–' + g.totalVP2 + '</div></div><button class="btn btn-d btn-sm" style="width:auto;flex-shrink:0;margin-left:12px" onclick="Actions.showDeleteGame(\'' + esc(g.id) + '\')">' + ic('trash', 14) + '</button></div></div>').join('') + (games.length ? '' : UI.emptyState('No games logged.')) + cs;
+      ct = games.map(g => '<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-size:13px;font-weight:bold">' + esc(dname(g.player1, g)) + ' vs ' + esc(dname(g.player2, g)) + '</div><div style="font-size:12px;color:var(--dim);margin-top:2px">' + g.date + ' · ' + esc(g.scenario || 'Free Battle') + '</div><div style="font-size:13px;color:var(--gold);margin-top:2px;font-weight:bold">' + g.totalvp1 + '–' + g.totalvp2 + '</div></div><button class="btn btn-d btn-sm" style="width:auto;flex-shrink:0;margin-left:12px" onclick="Actions.showDeleteGame(\'' + esc(g.id) + '\')">' + ic('trash', 14) + '</button></div></div>').join('') + (games.length ? '' : UI.emptyState('No games logged.')) + cs;
     } else if (S.admin.tab === 2) {
       ct = '<div style="padding:12px 16px 0">' + UI.card('Admin Display Name', UI.formField('Display Name', UI.textInput('admin.name', { value: S.admin.name }))) + UI.card('Change Admin Password', UI.formField('New Password', UI.passwordInput('admin.newPw', { placeholder: 'Leave blank to keep current' })) + UI.formField('Confirm New Password', UI.passwordInput('admin.confPw')) + '<button class="btn btn-g" onclick="Actions.saveAdminProfile()">Save Admin Profile</button>') + '</div>';
     } else if (S.admin.tab === 3) {
@@ -2781,23 +2777,23 @@
   function renderPreservingScroll(force) { render(force); }
 
   function _doRender() {
-  const app = document.getElementById('app');
-  if (!app) return;
-  if (!S.auth.session) {
-    app.innerHTML = renderLogin();
-    S.nav.currentScreen = 'login';
-    return;
+    const app = document.getElementById('app');
+    if (!app) return;
+    if (!S.auth.session) {
+      app.innerHTML = renderLogin();
+      S.nav.currentScreen = 'login';
+      return;
+    }
+    const st = getScreenType();
+    if (forceNextRender || S.nav.currentScreen !== st || st.startsWith('log_')) {
+      app.innerHTML = '<div class="screen" id="scr">' + renderScreen() + '</div>' + renderNav();
+      S.nav.currentScreen = st;
+    } else {
+      const scr = document.getElementById('scr');
+      if (scr) scr.innerHTML = renderScreen();
+    }
+    forceNextRender = false;
   }
-  const st = getScreenType();
-  if (forceNextRender || S.nav.currentScreen !== st || st.startsWith('log_')) {
-    app.innerHTML = '<div class="screen" id="scr">' + renderScreen() + '</div>' + renderNav();
-    S.nav.currentScreen = st;
-  } else {
-    const scr = document.getElementById('scr');
-    if (scr) scr.innerHTML = renderScreen();
-  }
-  forceNextRender = false;
-}
 
   function getScreenType() {
     if (!S.auth.session) return 'login';
@@ -2843,10 +2839,9 @@
     }).join('') + '</nav>';
   }
 
-  // ─── SAVE GAME (with full error handling) ──────────────────────────
-  // (This is already inside Actions, but we keep it here for completeness)
-  // In the actual code, the saveGame function is defined inside Actions.
-  // We'll ensure the Actions.saveGame is the updated version.
+  // ─── SAVE GAME (with all lowercase keys) ──────────────────────────
+  // (Already defined inside Actions – keep the updated version)
+  // For completeness, the saveGame function in Actions should use lowercase keys.
 
   initApp();
 
@@ -2855,11 +2850,6 @@
   window.esc = esc;
   window.UI = UI;
   window.TacticManager = TacticManager;
-
-window.saveGameGlobal = function() {
-  toast('⚔️ Global save called', false);
-  Actions.saveGame();
-};
 
 })(); // end IIFE
 </script>
