@@ -1129,72 +1129,94 @@
     backToScore: function() { S.battle.step = 1; saveDraftDebounced(); render(true); },
 
     saveGame: async function() {
-      if (!S.battle.winner) { toast('Declare a winner first.', true); return; }
-      const key = 'g' + Date.now();
-      const rounds = S.battle.rounds.slice(0, S.battle.currentRound + 1);
-      const vp1 = rounds.reduce((s, x) => s + (x.vp1 || 0), 0);
-      const vp2 = rounds.reduce((s, x) => s + (x.vp2 || 0), 0);
-      const p1TacticNames = S.battle.p1Tactics.filter(t => t >= 0).map(t => CONFIG.BATTLE_TACTICS[t].name);
-      const p2TacticNames = S.battle.p2Tactics.filter(t => t >= 0).map(t => CONFIG.BATTLE_TACTICS[t].name);
-      const game = {
-        id: key,
-        date: new Date().toISOString().slice(0,10),
-        player1: S.auth.session.username,
-        player2: S.battle.opponent.username,
-        faction1: S.battle.faction1,
-        faction2: S.battle.faction2,
-        grandAlliance1: gaFor(S.battle.faction1),
-        grandAlliance2: gaFor(S.battle.faction2),
-        rounds: rounds,
-        totalVP1: vp1,
-        totalVP2: vp2,
-        winner: S.battle.winner,
-        scenario: S.battle.scenario,
-        notes: S.battle.notes,
-        loggedBy: S.auth.session.username,
-        isSample: false,
-        guestName: S.battle.opponent.username === CONFIG.SPECIAL_USERS.GUEST ? S.battle.opponent.displayName : null,
-        p1TacticsUsed: p1TacticNames,
-        p2TacticsUsed: p2TacticNames,
-        isTTS: S.battle.isTTS || false,
-        isTournament: S.battle.isTournament || false,
-        displayName1: S.auth.session.displayName || S.auth.session.username,
-        displayName2: S.battle.opponent.displayName
-      };
-      await saveGame(game);
-      await loadAllData();
-      const user = DataCache.user(S.auth.session.username);
-      if (user) {
-        S.auth.session.gamesPlayed = user.gamesPlayed;
-        S.auth.session.wins = user.wins;
-        S.auth.session.draws = user.draws;
-      }
-      toast('Battle recorded!');
-      S.battle.step = 0;
-      S.battle.opponent = null;
-      S.battle.faction1 = S.auth.session.factions[0] || '';
-      S.battle.faction2 = '';
-      S.battle.scenario = '';
-      S.battle.rounds = [];
-      S.battle.currentRound = 0;
-      S.battle.winner = null;
-      S.battle.notes = '';
-      S.battle.p1Tactics = [-1,-1];
-      S.battle.p2Tactics = [-1,-1];
-      S.battle.tacticProgress = {};
-      S.battle.underdog = null;
-      S.battle.doubleTurn = null;
-      S.battle.manualUnderdog = false;
-      S.battle.useFactionTrackers = true;
-      S.battle.isTTS = false;
-      S.battle.isTournament = false;
-      S.battle.khorne = { p1: { points:0, unlocked:[] }, p2: { points:0, unlocked:[] } };
-      S.battle.lumineth = { p1: { scripture: { strength:0, river:0, wind:0, mountain:0 }, extraRune: false, extraUsed: false }, p2: { scripture: { strength:0, river:0, wind:0, mountain:0 }, extraRune: false, extraUsed: false } };
-      S.battle.tideState = { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
-      S.battle._prevTideState = { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
-      clearDraft();
-      render(true);
-    },
+  toast('⚔️ Saving battle...', false);
+  if (!S.battle.winner) {
+    toast('Declare a winner first.', true);
+    return;
+  }
+  try {
+    const key = 'g' + Date.now();
+    const rounds = S.battle.rounds.slice(0, S.battle.currentRound + 1);
+    const vp1 = rounds.reduce((s, x) => s + (x.vp1 || 0), 0);
+    const vp2 = rounds.reduce((s, x) => s + (x.vp2 || 0), 0);
+    const p1TacticNames = S.battle.p1Tactics.filter(t => t >= 0).map(t => CONFIG.BATTLE_TACTICS[t].name);
+    const p2TacticNames = S.battle.p2Tactics.filter(t => t >= 0).map(t => CONFIG.BATTLE_TACTICS[t].name);
+
+    const game = {
+      id: key,
+      date: new Date().toISOString().slice(0,10),
+      player1: S.auth.session.username,
+      player2: S.battle.opponent.username,
+      faction1: S.battle.faction1,
+      faction2: S.battle.faction2,
+      grandalliance1: gaFor(S.battle.faction1),
+      grandalliance2: gaFor(S.battle.faction2),
+      rounds: rounds,
+      totalvp1: vp1,
+      totalvp2: vp2,
+      winner: S.battle.winner,
+      scenario: S.battle.scenario,
+      notes: S.battle.notes,
+      loggedby: S.auth.session.username,
+      issample: false,
+      guestname: S.battle.opponent.username === CONFIG.SPECIAL_USERS.GUEST ? S.battle.opponent.displayName : null,
+      p1tacticsused: p1TacticNames,
+      p2tacticsused: p2TacticNames,
+      istts: S.battle.isTTS || false,
+      istournament: S.battle.isTournament || false,
+      displayname1: S.auth.session.displayName || S.auth.session.username,
+      displayname2: S.battle.opponent.displayName
+    };
+
+    const result = await saveGame(game);
+    if (!result) {
+      toast('Failed to save: no data returned.', true);
+      return;
+    }
+
+    await loadAllData();
+    const user = DataCache.user(S.auth.session.username);
+    if (user) {
+      S.auth.session.gamesPlayed = user.gamesPlayed;
+      S.auth.session.wins = user.wins;
+      S.auth.session.draws = user.draws;
+    }
+
+    toast('Battle recorded!');
+
+    S.battle.step = 0;
+    S.battle.opponent = null;
+    S.battle.faction1 = S.auth.session.factions[0] || '';
+    S.battle.faction2 = '';
+    S.battle.scenario = '';
+    S.battle.rounds = [];
+    S.battle.currentRound = 0;
+    S.battle.winner = null;
+    S.battle.notes = '';
+    S.battle.p1Tactics = [-1,-1];
+    S.battle.p2Tactics = [-1,-1];
+    S.battle.tacticProgress = {};
+    S.battle.underdog = null;
+    S.battle.doubleTurn = null;
+    S.battle.manualUnderdog = false;
+    S.battle.useFactionTrackers = true;
+    S.battle.isTTS = false;
+    S.battle.isTournament = false;
+    S.battle.khorne = { p1: { points:0, unlocked:[] }, p2: { points:0, unlocked:[] } };
+    S.battle.lumineth = { p1: { scripture: { strength:0, river:0, wind:0, mountain:0 }, extraRune: false, extraUsed: false }, p2: { scripture: { strength:0, river:0, wind:0, mountain:0 }, extraRune: false, extraUsed: false } };
+    S.battle.tideState = { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
+    S.battle._prevTideState = { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
+    clearDraft();
+
+    S.nav.tab = 0;
+    S.nav.currentScreen = null;
+    render(true);
+
+  } catch (err) {
+    toast('❌ Save failed: ' + (err.message || err), true);
+    console.error('saveGame error:', err);
+  }
+},
 
     setDashFilter: function(f) { S.ui.dashFilter = f; S.ui.expandedGame = null; render(true); },
     toggleGameExpand: function(id) { S.ui.expandedGame = S.ui.expandedGame === id ? null : id; render(true); },
@@ -1738,8 +1760,7 @@
       toast('Exported ' + filename);
     }
   };
-  //  PART 2   //  DRAFT MIGRATION 
-    // ─── PART 2 ─────────────────────────────────────────────────────────  // ─── DRAFT MIGRATION ──────────────────────────────────────────────
+  // ─── PART 2 ─────────────────────────────────────────────────────────  // ─── DRAFT MIGRATION ──────────────────────────────────────────────
   function migrateDraft(draft) {
     if (draft.khorne && !draft.khorne.p1) {
       const old = draft.khorne;
@@ -2229,13 +2250,20 @@
   }
 
   function renderLogConfirm() {
-    const vp1 = S.battle.rounds.reduce((s, x) => s + (x.vp1 || 0), 0);
-    const vp2 = S.battle.rounds.reduce((s, x) => s + (x.vp2 || 0), 0);
-    const w1 = S.battle.winner === S.auth.session.username;
-    const w2 = S.battle.winner === S.battle.opponent?.username;
-    const wDraw = S.battle.winner === 'draw';
-    return UI.sectionHeader('Battle Concluded') + UI.card('Final Score', '<div style="display:flex;justify-content:center;align-items:center;gap:20px;padding:12px 0"><div style="text-align:center"><div style="font-size:13px;font-weight:bold">' + esc(S.auth.session.username) + '</div><div class="score-total" style="font-size:44px">' + vp1 + '</div></div><div style="color:var(--dim);font-weight:bold">VS</div><div style="text-align:center"><div style="font-size:13px;font-weight:bold">' + esc(S.battle.opponent ? S.battle.opponent.displayName : 'Opponent') + '</div><div class="score-total" style="font-size:44px">' + vp2 + '</div></div></div>') + UI.card('Declare Victor', '<div class="btn-row"><button class="btn ' + (w1 ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'' + esc(S.auth.session.username) + '\')">' + ic('trophy', 15) + ' ' + esc(S.auth.session.username) + '</button><button class="btn ' + (w2 ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'' + esc(S.battle.opponent ? S.battle.opponent.username : '') + '\')">' + ic('trophy', 15) + ' ' + esc(S.battle.opponent ? S.battle.opponent.displayName : 'Opponent') + '</button><button class="btn ' + (wDraw ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'draw\')">' + ic('trophy', 15) + ' Draw</button></div>') + '<div style="padding:0 16px">' + UI.formField('Battle Notes (optional)', '<textarea class="inp" data-bind="battle.notes" rows="3" placeholder="How did it go?">' + esc(S.battle.notes) + '</textarea>') + '<button class="btn btn-g" onclick="Actions.saveGame()" ' + (!S.battle.winner ? 'disabled style="opacity:.5"' : '') + '>' + ic('check', 16) + ' Save Battle</button><button class="btn btn-o" style="margin-top:10px" onclick="Actions.backToScore()">Back to Score</button></div>';
-  }
+  const vp1 = S.battle.rounds.reduce((s, x) => s + (x.vp1 || 0), 0);
+  const vp2 = S.battle.rounds.reduce((s, x) => s + (x.vp2 || 0), 0);
+  const w1 = S.battle.winner === S.auth.session.username;
+  const w2 = S.battle.winner === S.battle.opponent?.username;
+  const wDraw = S.battle.winner === 'draw';
+  return UI.sectionHeader('Battle Concluded') + 
+    UI.card('Final Score', '<div style="display:flex;justify-content:center;align-items:center;gap:20px;padding:12px 0"><div style="text-align:center"><div style="font-size:13px;font-weight:bold">' + esc(S.auth.session.username) + '</div><div class="score-total" style="font-size:44px">' + vp1 + '</div></div><div style="color:var(--dim);font-weight:bold">VS</div><div style="text-align:center"><div style="font-size:13px;font-weight:bold">' + esc(S.battle.opponent ? S.battle.opponent.displayName : 'Opponent') + '</div><div class="score-total" style="font-size:44px">' + vp2 + '</div></div></div>') + 
+    UI.card('Declare Victor', '<div class="btn-row"><button class="btn ' + (w1 ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'' + esc(S.auth.session.username) + '\')">' + ic('trophy', 15) + ' ' + esc(S.auth.session.username) + '</button><button class="btn ' + (w2 ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'' + esc(S.battle.opponent ? S.battle.opponent.username : '') + '\')">' + ic('trophy', 15) + ' ' + esc(S.battle.opponent ? S.battle.opponent.displayName : 'Opponent') + '</button><button class="btn ' + (wDraw ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'draw\')">' + ic('trophy', 15) + ' Draw</button></div>') + 
+    '<div style="padding:0 16px">' + 
+    UI.formField('Battle Notes (optional)', '<textarea class="inp" data-bind="battle.notes" rows="3" placeholder="How did it go?">' + esc(S.battle.notes) + '</textarea>') + 
+    '<button class="btn btn-g" id="saveGameBtn" onclick="window.saveGameGlobal()" ' + (!S.battle.winner ? 'disabled style="opacity:.5"' : '') + '>' + ic('check', 16) + ' Save Battle</button>' + 
+    '<button class="btn btn-o" style="margin-top:10px" onclick="Actions.backToScore()">Back to Score</button>' + 
+    '</div>';
+}
 
   function renderLanding() {
     const games = DataCache.games;
@@ -2768,6 +2796,25 @@
       const scr = document.getElementById('scr');
       if (scr) scr.innerHTML = renderScreen();
     }
+
+    // ─── DELEGATED SAVE BUTTON LISTENER ──────────────────────────────
+    const scr = document.getElementById('scr');
+    if (scr && !scr._saveListener) {
+      scr.addEventListener('click', function(e) {
+        const target = e.target.closest('#saveGameBtn');
+        if (target) {
+          e.preventDefault();
+          toast('⚔️ Save clicked (delegated)', false);
+          if (typeof Actions.saveGame === 'function') {
+            Actions.saveGame();
+          } else {
+            toast('❌ Actions.saveGame is not a function!', true);
+          }
+        }
+      });
+      scr._saveListener = true;
+    }
+
     forceNextRender = false;
   }
 
@@ -2815,6 +2862,11 @@
     }).join('') + '</nav>';
   }
 
+  // ─── SAVE GAME (with full error handling) ──────────────────────────
+  // (This is already inside Actions, but we keep it here for completeness)
+  // In the actual code, the saveGame function is defined inside Actions.
+  // We'll ensure the Actions.saveGame is the updated version.
+
   initApp();
 
   window.Actions = Actions;
@@ -2822,6 +2874,11 @@
   window.esc = esc;
   window.UI = UI;
   window.TacticManager = TacticManager;
+
+window.saveGameGlobal = function() {
+  toast('⚔️ Global save called', false);
+  Actions.saveGame();
+};
 
 })(); // end IIFE
 </script>
