@@ -2260,7 +2260,7 @@
     UI.card('Declare Victor', '<div class="btn-row"><button class="btn ' + (w1 ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'' + esc(S.auth.session.username) + '\')">' + ic('trophy', 15) + ' ' + esc(S.auth.session.username) + '</button><button class="btn ' + (w2 ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'' + esc(S.battle.opponent ? S.battle.opponent.username : '') + '\')">' + ic('trophy', 15) + ' ' + esc(S.battle.opponent ? S.battle.opponent.displayName : 'Opponent') + '</button><button class="btn ' + (wDraw ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'draw\')">' + ic('trophy', 15) + ' Draw</button></div>') + 
     '<div style="padding:0 16px">' + 
     UI.formField('Battle Notes (optional)', '<textarea class="inp" data-bind="battle.notes" rows="3" placeholder="How did it go?">' + esc(S.battle.notes) + '</textarea>') + 
-    '<button class="btn btn-g" id="saveGameBtn" onclick="window.saveGameGlobal()" ' + (!S.battle.winner ? 'disabled style="opacity:.5"' : '') + '>' + ic('check', 16) + ' Save Battle</button>' + 
+    '<button class="btn btn-g" id="saveGameBtn" onclick="Actions.saveGame()" ' + (!S.battle.winner ? 'disabled style="opacity:.5"' : '') + '>' + ic('check', 16) + ' Save Battle</button>' + 
     '<button class="btn btn-o" style="margin-top:10px" onclick="Actions.backToScore()">Back to Score</button>' + 
     '</div>';
 }
@@ -2781,42 +2781,23 @@
   function renderPreservingScroll(force) { render(force); }
 
   function _doRender() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    if (!S.auth.session) {
-      app.innerHTML = renderLogin();
-      S.nav.currentScreen = 'login';
-      return;
-    }
-    const st = getScreenType();
-    if (forceNextRender || S.nav.currentScreen !== st || st.startsWith('log_')) {
-      app.innerHTML = '<div class="screen" id="scr">' + renderScreen() + '</div>' + renderNav();
-      S.nav.currentScreen = st;
-    } else {
-      const scr = document.getElementById('scr');
-      if (scr) scr.innerHTML = renderScreen();
-    }
-
-    // ─── DELEGATED SAVE BUTTON LISTENER ──────────────────────────────
-    const scr = document.getElementById('scr');
-    if (scr && !scr._saveListener) {
-      scr.addEventListener('click', function(e) {
-        const target = e.target.closest('#saveGameBtn');
-        if (target) {
-          e.preventDefault();
-          toast('⚔️ Save clicked (delegated)', false);
-          if (typeof Actions.saveGame === 'function') {
-            Actions.saveGame();
-          } else {
-            toast('❌ Actions.saveGame is not a function!', true);
-          }
-        }
-      });
-      scr._saveListener = true;
-    }
-
-    forceNextRender = false;
+  const app = document.getElementById('app');
+  if (!app) return;
+  if (!S.auth.session) {
+    app.innerHTML = renderLogin();
+    S.nav.currentScreen = 'login';
+    return;
   }
+  const st = getScreenType();
+  if (forceNextRender || S.nav.currentScreen !== st || st.startsWith('log_')) {
+    app.innerHTML = '<div class="screen" id="scr">' + renderScreen() + '</div>' + renderNav();
+    S.nav.currentScreen = st;
+  } else {
+    const scr = document.getElementById('scr');
+    if (scr) scr.innerHTML = renderScreen();
+  }
+  forceNextRender = false;
+}
 
   function getScreenType() {
     if (!S.auth.session) return 'login';
