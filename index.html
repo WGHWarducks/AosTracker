@@ -4,8 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
   <title>AoS Battle Tracker – Supabase</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E🦆%3C/text%3E%3C/svg%3E">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230a0a0a'/%3E%3Ctext y='80' font-size='80'%3E🦆%3C/text%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230a0a0a'/%3E%3Ctext y='80' font-size='80'%3E%3C/text%3E%3C/svg%3E">
   <style>
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
     :root{
@@ -105,7 +105,7 @@
     .tactic-item.locked{opacity:.4;cursor:not-allowed}
     .tactic-item .tac-dot{width:16px;height:16px;border-radius:50%;flex-shrink:0;border:2px solid var(--bdr);display:flex;align-items:center;justify-content:center}
     .tactic-item.done .tac-dot{background:var(--gold);border-color:var(--gold)}
-    .tactic-item.done .tac-dot::after{content:'✓';color:#0a0a0a;font-size:10px;font-weight:bold}
+    .tactic-item.done .tac-dot::after{content:'';color:#0a0a0a;font-size:10px;font-weight:bold}
     .tactic-item.current .tac-dot{border-color:var(--gold)}
     .tactic-item.locked .tac-dot{border-color:var(--dim)}
     .tactic-item .tac-plus{font-size:10px;color:var(--gold);font-weight:bold;margin-left:auto;flex-shrink:0}
@@ -135,7 +135,7 @@
     .gscore{font-size:22px;color:var(--gold);font-weight:bold}
     .faction-check{width:20px;height:20px;border:2px solid var(--bdr);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .faction-check.checked{background:var(--gold);border-color:var(--gold)}
-    .faction-check.checked::after{content:'✓';color:#0a0a0a;font-size:13px;font-weight:bold}
+    .faction-check.checked::after{content:'';color:#0a0a0a;font-size:13px;font-weight:bold}
     .pw-toggle{position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--dim);background:none;border:none;padding:4px;z-index:5}
     .pw-toggle:hover{color:var(--gold)}
     .sort-row{display:flex;gap:8px;padding:8px 16px;flex-wrap:wrap;justify-content:center}
@@ -165,7 +165,7 @@
     .tactic-card .tac-sub.locked{opacity:.4}
     .tactic-card .tac-sub .tac-dot-sm{width:12px;height:12px;border-radius:50%;flex-shrink:0;border:2px solid var(--bdr);display:inline-flex;align-items:center;justify-content:center}
     .tactic-card .tac-sub.done .tac-dot-sm{background:var(--gold);border-color:var(--gold)}
-    .tactic-card .tac-sub.done .tac-dot-sm::after{content:'✓';color:#0a0a0a;font-size:8px;font-weight:bold}
+    .tactic-card .tac-sub.done .tac-dot-sm::after{content:'';color:#0a0a0a;font-size:8px;font-weight:bold}
     .tactic-card .tac-sub.current .tac-dot-sm{border-color:var(--gold)}
     .tactic-card .tac-sub.locked .tac-dot-sm{border-color:var(--dim)}
     .tactic-card .tac-sub .tac-plus-sm{font-size:9px;color:var(--gold);font-weight:bold;margin-left:auto;flex-shrink:0}
@@ -349,7 +349,7 @@
   const { placeholder = '••••••••', enterAction = '', value = '', oninput = '' } = o;
   const id = 'pw-'+bind.replace(/\./g,'-');
   return `<div style="position:relative"><input class="inp" id="${id}" data-bind="${bind}" type="password" placeholder="${esc(placeholder)}" value="${esc(value)}" ${enterAction ? `data-enter="${enterAction}"` : ''} ${oninput ? `oninput="${oninput}"` : ''} autocomplete="off" style="padding-right:44px"><button type="button" class="pw-toggle" data-pw-toggle="${id}" onclick="UI.togglePassword('${id}')" tabindex="-1">${ic('eye',16)}</button></div>`;
-},togglePassword(id){const i=document.getElementById(id);if(!i)return;const p=i.type==='password';i.type=p?'text':'password';i.focus();const b=document.querySelector(`[data-pw-toggle="${id}"]`);if(b)b.innerHTML=ic(p?'eyeoff':'eye',16);},emptyState(m){return`<div class="card" style="text-align:center;color:var(--dim);font-style:italic">${esc(m)}</div>`;},resourceStepper(bind,value,o={}){const{min=0,max=99,step=1,color='var(--gold)',label=''}=o;return`<div class="game-track-row"><span class="game-track-label" style="color:${color}">${esc(label)}</span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjResourceDOM('${bind}',${-step},${min},${max})">−</div><div class="game-track-val" id="res-${bind}" style="color:${color}">${value}</div><div class="game-track-btn" onclick="Actions.adjResourceDOM('${bind}',${step},${min},${max})">+</div></div></div>`;},vpStepper(bind,v,o={}){const{step=1,label='',max=99}=o;return`<div class="game-track-row"><span class="game-track-label" style="width:52px">${esc(label)}</span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjStepperDOM('${bind}',${-step},${max})">−</div><div class="game-track-val" id="vp-${bind.replace(/\./g,'-')}">${v}</div><div class="game-track-btn" onclick="Actions.adjStepperDOM('${bind}',${step},${max})">+</div></div><div class="game-track-full"></div></div>`;},factionDropdown(bind,currentVal){let opts='<option value="">Select faction</option>';Object.entries(FACTIONS).forEach(([ga,fs])=>{opts+=`<optgroup label="${ga}">`;fs.forEach(f=>{opts+=`<option value="${esc(f)}" ${currentVal===f?'selected':''}>${esc(f)}</option>`;});opts+='</optgroup>';});return`<select class="tac-select" onchange="S.${bind}=this.value">${opts}</select>`;},scenarioDropdown(bind,currentVal){let opts='<option value="">Select battle plan</option>';CONFIG.BATTLE_PLANS.forEach(p=>{opts+=`<option value="${esc(p)}" ${currentVal===p?'selected':''}>${esc(p)}</option>`;});return`<select class="tac-select" onchange="S.${bind}=this.value">${opts}</select>`;},spacer:(h=120)=>`<div style="height:${h}px;width:100%;"></div>`};
+},togglePassword(id){const i=document.getElementById(id);if(!i)return;const p=i.type==='password';i.type=p?'text':'password';i.focus();const b=document.querySelector(`[data-pw-toggle="${id}"]`);if(b)b.innerHTML=ic(p?'eyeoff':'eye',16);},emptyState(m){return`<div class="card" style="text-align:center;color:var(--dim);font-style:italic">${esc(m)}</div>`;},resourceStepper(bind,value,o={}){const{min=0,max=99,step=1,color='var(--gold)',label=''}=o;return`<div class="game-track-row"><span class="game-track-label" style="color:${color}">${esc(label)}</span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjResourceDOM('${bind}',${-step},${min},${max})"></div><div class="game-track-val" id="res-${bind}" style="color:${color}">${value}</div><div class="game-track-btn" onclick="Actions.adjResourceDOM('${bind}',${step},${min},${max})">+</div></div></div>`;},vpStepper(bind,v,o={}){const{step=1,label='',max=99}=o;return`<div class="game-track-row"><span class="game-track-label" style="width:52px">${esc(label)}</span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjStepperDOM('${bind}',${-step},${max})"></div><div class="game-track-val" id="vp-${bind.replace(/\./g,'-')}">${v}</div><div class="game-track-btn" onclick="Actions.adjStepperDOM('${bind}',${step},${max})">+</div></div><div class="game-track-full"></div></div>`;},factionDropdown(bind,currentVal){let opts='<option value="">Select faction</option>';Object.entries(FACTIONS).forEach(([ga,fs])=>{opts+=`<optgroup label="${ga}">`;fs.forEach(f=>{opts+=`<option value="${esc(f)}" ${currentVal===f?'selected':''}>${esc(f)}</option>`;});opts+='</optgroup>';});return`<select class="tac-select" onchange="S.${bind}=this.value">${opts}</select>`;},scenarioDropdown(bind,currentVal){let opts='<option value="">Select battle plan</option>';CONFIG.BATTLE_PLANS.forEach(p=>{opts+=`<option value="${esc(p)}" ${currentVal===p?'selected':''}>${esc(p)}</option>`;});return`<select class="tac-select" onchange="S.${bind}=this.value">${opts}</select>`;},spacer:(h=120)=>`<div style="height:${h}px;width:100%;"></div>`};
 
   const TacticManager={getBestProgress(player,tacticIdx,upToRound){let best=-1;for(let r=0;r<=upToRound;r++){const rProg=S.battle.tacticProgress[r]?(S.battle.tacticProgress[r][player]||{}):{};if(rProg[tacticIdx]!==undefined&&rProg[tacticIdx]>best)best=rProg[tacticIdx];}return best;},hasNewSubThisRound(player,tacticIdx,roundKey){const curProg=S.battle.tacticProgress[roundKey]?(S.battle.tacticProgress[roundKey][player]||{}):{};const prevProg=S.battle.tacticProgress[roundKey-1]?(S.battle.tacticProgress[roundKey-1][player]||{}):{};const cur=curProg[tacticIdx]!==undefined?curProg[tacticIdx]:-1;const prev=prevProg[tacticIdx]!==undefined?prevProg[tacticIdx]:-1;return cur>prev;},canSelectSub(player,tacticIdx,subIdx,roundKey){const best=this.getBestProgress(player,tacticIdx,roundKey);if(subIdx!==best+1)return false;return!this.hasNewSubThisRound(player,tacticIdx,roundKey);},canDeselectSub(player,tacticIdx,subIdx,roundKey){const best=this.getBestProgress(player,tacticIdx,roundKey);if(subIdx!==best||subIdx<0)return false;return this.hasNewSubThisRound(player,tacticIdx,roundKey);},getCurrentProgress(player,roundKey){const progress={};for(let r=0;r<=roundKey;r++){const rProg=S.battle.tacticProgress[r]?(S.battle.tacticProgress[r][player]||{}):{};for(let ti in rProg){if(progress[ti]===undefined||rProg[ti]>progress[ti])progress[ti]=rProg[ti];}}return progress;}};
 
@@ -414,7 +414,7 @@
     if (error) throw error;
   }
 
-  // ─── DRAFT STORAGE (localStorage) ──────────────────────────────────
+  //  DRAFT STORAGE (localStorage) 
   function loadDraft(username) {
     try {
       const raw = localStorage.getItem('draft_' + username);
@@ -479,7 +479,7 @@
     await supabaseClient.auth.signOut();
   }
 
-  // ─── GLOBAL STATE ──────────────────────────────────────────────────
+  //  GLOBAL STATE 
   const S = {
     auth: { session: null, loginUser: '', loginPw: '', loginError: '', loginMode: 'login' },
     register: { user: '', pw: '', conf: '', factions: [], error: '' },
@@ -523,7 +523,7 @@
     invalidate() { /* no-op */ }
   };
 
-  // ─── ACTIONS ────────────────────────────────────────────────────────
+  //  ACTIONS 
   const Actions = {
     goToTab: function(i) {
       if (i === 1 && S.battle.step !== 0) {
@@ -1738,7 +1738,8 @@
       toast('Exported ' + filename);
     }
   };
-  // ─── PART 2 ─────────────────────────────────────────────────────────  // ─── DRAFT MIGRATION ──────────────────────────────────────────────
+  //  PART 2   //  DRAFT MIGRATION 
+    // ─── PART 2 ─────────────────────────────────────────────────────────  // ─── DRAFT MIGRATION ──────────────────────────────────────────────
   function migrateDraft(draft) {
     if (draft.khorne && !draft.khorne.p1) {
       const old = draft.khorne;
@@ -2263,13 +2264,13 @@
             const vs = draft.opponentDisplayName || 'Opponent';
             const rnd = draft.currentRound !== undefined ? 'Round ' + (draft.currentRound + 1) : 'Setup';
             draftHTML = '<div class="card" style="border-color:var(--gold); background:rgba(201,168,76,.05)">'
-  + '<div class="ct">Unfinished Battle</div>'
-  + '<div style="font-size:14px; color:var(--parch)">' + esc(S.auth.session.username) + ' vs ' + esc(vs) + '</div>'
-  + '<div style="font-size:12px; color:var(--dim); margin-top:4px">' + rnd + ' · ' + esc(draft.scenario || 'No plan') + '</div>'
-  + '<div class="landing-actions" style="margin-top:10px">'
-  + '<button class="btn btn-g btn-sm" onclick="Actions.resumeDraft()">Resume Battle</button>'
-  + '<button class="btn btn-o btn-sm" onclick="Actions.discardDraft()">Discard</button>'
-  + '</div></div>';
+              + '<div class="ct">Unfinished Battle</div>'
+              + '<div style="font-size:14px; color:var(--parch)">' + esc(S.auth.session.username) + ' vs ' + esc(vs) + '</div>'
+              + '<div style="font-size:12px; color:var(--dim); margin-top:4px">' + rnd + ' · ' + esc(draft.scenario || 'No plan') + '</div>'
+              + '<div class="landing-actions" style="margin-top:10px">'
+              + '<button class="btn btn-g btn-sm" onclick="Actions.resumeDraft()">Resume Battle</button>'
+              + '<button class="btn btn-o btn-sm" onclick="Actions.discardDraft()">Discard</button>'
+              + '</div></div>';
             // Update state for other parts
             S.ui.draftData = draft;
             S.ui.draftExists = true;
@@ -2591,7 +2592,7 @@
       UI.card('Stats', [['Games', mg.length], ['Wins', wins], ['Draws', draws], ['Losses', mg.length - wins - draws], ['Win %', mg.length && (mg.length - draws) > 0 ? Math.round(wins / (mg.length - draws) * 100) + '%' : '—']].map(([l, v]) => UI.statRow(l, v)).join('')) +
       UI.card('Edit Profile', UI.formField('Display Name', UI.textInput('profile.name', { value: S.profile.name, oninput: 'S.profile.name=this.value' })) + UI.formField('Factions', '<button class="btn btn-o" onclick="Actions.openFactionPicker(\'prof\')">' + esc(fl) + '</button>') + '<button class="btn btn-g" onclick="Actions.saveProfile()">Save Changes</button>') +
       UI.card('Change Password', UI.formField('Current Password', UI.passwordInput('profile.curPw', { oninput: 'S.profile.curPw=this.value' })) + UI.formField('New Password', UI.passwordInput('profile.newPw', { oninput: 'S.profile.newPw=this.value' })) + UI.formField('Confirm New', UI.passwordInput('profile.conf', { oninput: 'S.profile.conf=this.value' })) + '<button class="btn btn-o" onclick="Actions.changePw()">' + ic('lock', 14) + ' Change Password</button>') +
-      '<div class="card" style="border-color:rgba(231,76,60,.3)"><div class="ct" style="color:var(--red)">Danger Zone</div><button class="btn btn-d" onclick="Actions.toggleDeleteConfirm()">Delete My Account</button>' + (S.profile.showDel ? '<div style="margin-top:12px">' + UI.formField('Type username to confirm', UI.textInput('profile.delConf', { placeholder: S.auth.session.username, value: S.profile.delConf })) + '<button class="btn btn-d" onclick="Actions.deleteMyAccount()">Confirm Delete</button></div>' : '') + '</div>' + renderFactionPicker('prof', S.profile.factions) + UI.spacer();
+      '<div class="card" style="border-color:rgba(231,76,60,.3)"><div class="ct" style="color:var(--red)">Danger Zone</div><button class="btn btn-d" onclick="Actions.toggleDeleteConfirm()">Delete My Account</button>' + (S.profile.showDel ? '<div style="margin-top:12px">' + UI.formField('Type username to confirm', UI.textInput('profile.delConf', { placeholder: S.auth.session.username, value: S.profile.delConf, oninput: 'S.profile.delConf=this.value' })) + '<button class="btn btn-d" onclick="Actions.deleteMyAccount()">Confirm Delete</button></div>' : '') + '</div>' + renderFactionPicker('prof', S.profile.factions) + UI.spacer();
   }
 
   function renderAdmin() {
@@ -2610,7 +2611,7 @@
             (S.admin.resetTarget === u.username ? UI.formField('New Password for ' + esc(u.username), UI.passwordInput('admin.resetPw', { placeholder: 'New password' })) + '<div class="btn-row"><button class="btn btn-o btn-sm" onclick="Actions.cancelResetPw()">Cancel</button><button class="btn btn-g btn-sm" onclick="Actions.doResetPw(\'' + esc(u.username) + '\')">' + ic('check', 14) + ' Confirm Reset</button></div>' : '<button class="btn btn-o btn-sm" onclick="Actions.showResetPw(\'' + esc(u.username) + '\')">' + ic('lock', 14) + ' Reset Password</button>') +
             (S.admin.editTarget === u.username ? UI.formField('New Display Name', UI.textInput('admin.editName', { value: S.admin.editName })) + '<div class="btn-row"><button class="btn btn-o btn-sm" onclick="Actions.cancelEditName()">Cancel</button><button class="btn btn-g btn-sm" onclick="Actions.doEditName(\'' + esc(u.username) + '\')">' + ic('check', 14) + ' Save</button></div>' : '<button class="btn btn-o btn-sm" onclick="Actions.showEditName(\'' + esc(u.username) + '\')">' + ic('edit', 14) + ' Edit Name</button>') +
             '<button class="btn btn-sm ' + (u.isSuspended ? 'btn-g' : 'btn-o') + '" onclick="Actions.doToggleSuspend(\'' + esc(u.username) + '\')">' + ic('refresh', 14) + ' ' + (u.isSuspended ? 'Unsuspend' : 'Suspend') + '</button>' +
-            (S.admin.confDel === u.username ? '<div style="font-size:13px;color:var(--red);margin-bottom:6px">Type username to confirm:</div>' + UI.textInput('admin.delInput', { placeholder: u.username, value: S.admin.delInput }) + '<div class="btn-row" style="margin-top:8px"><button class="btn btn-o btn-sm" onclick="Actions.cancelDeleteUser()">Cancel</button><button class="btn btn-d btn-sm" onclick="Actions.doDeleteUser(\'' + esc(u.username) + '\')">' + ic('trash', 14) + ' Delete</button></div>' : '<button class="btn btn-d btn-sm" onclick="Actions.showDeleteUser(\'' + esc(u.username) + '\')">' + ic('trash', 14) + ' Delete Account</button>') +
+            (S.admin.confDel === u.username ? '<div style="font-size:13px;color:var(--red);margin-bottom:6px">Type username to confirm:</div>' + UI.textInput('admin.delInput', { placeholder: u.username, value: S.admin.delInput, oninput: 'S.admin.delInput=this.value' }) + '<div class="btn-row" style="margin-top:8px"><button class="btn btn-o btn-sm" onclick="Actions.cancelDeleteUser()">Cancel</button><button class="btn btn-d btn-sm" onclick="Actions.doDeleteUser(\'' + esc(u.username) + '\')">' + ic('trash', 14) + ' Delete</button></div>' : '<button class="btn btn-d btn-sm" onclick="Actions.showDeleteUser(\'' + esc(u.username) + '\')">' + ic('trash', 14) + ' Delete Account</button>') +
             '</div>';
         }
         return '<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer" onclick="Actions.toggleUserExpand(\'' + esc(u.username) + '\')"><div><div style="display:flex;gap:8px;align-items:center"><span style="font-weight:bold">' + esc(u.username) + '</span>' + (u.isSuspended ? ' <span class="susp">SUSPENDED</span>' : '') + '</div><div style="font-size:12px;color:var(--dim);margin-top:2px">@' + esc(u.username) + ' · ' + (u.gamesPlayed || 0) + ' games · ' + (u.wins || 0) + ' wins · ' + (u.draws || 0) + ' draws</div></div><span style="color:var(--dim)">' + ic('chevdown', 14) + '</span></div>' + tr + '</div>';
