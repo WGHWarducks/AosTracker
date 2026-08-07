@@ -4,8 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
   <title>AoS Battle Tracker – Supabase</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E%3C/text%3E%3C/svg%3E">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230a0a0a'/%3E%3Ctext y='80' font-size='80'%3E%3C/text%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E🦆%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230a0a0a'/%3E%3Ctext y='80' font-size='80'%3E🦆%3C/text%3E%3C/svg%3E">
   <style>
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
     :root{
@@ -105,7 +105,7 @@
     .tactic-item.locked{opacity:.4;cursor:not-allowed}
     .tactic-item .tac-dot{width:16px;height:16px;border-radius:50%;flex-shrink:0;border:2px solid var(--bdr);display:flex;align-items:center;justify-content:center}
     .tactic-item.done .tac-dot{background:var(--gold);border-color:var(--gold)}
-    .tactic-item.done .tac-dot::after{content:'';color:#0a0a0a;font-size:10px;font-weight:bold}
+    .tactic-item.done .tac-dot::after{content:'✓';color:#0a0a0a;font-size:10px;font-weight:bold}
     .tactic-item.current .tac-dot{border-color:var(--gold)}
     .tactic-item.locked .tac-dot{border-color:var(--dim)}
     .tactic-item .tac-plus{font-size:10px;color:var(--gold);font-weight:bold;margin-left:auto;flex-shrink:0}
@@ -135,7 +135,7 @@
     .gscore{font-size:22px;color:var(--gold);font-weight:bold}
     .faction-check{width:20px;height:20px;border:2px solid var(--bdr);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .faction-check.checked{background:var(--gold);border-color:var(--gold)}
-    .faction-check.checked::after{content:'';color:#0a0a0a;font-size:13px;font-weight:bold}
+    .faction-check.checked::after{content:'✓';color:#0a0a0a;font-size:13px;font-weight:bold}
     .pw-toggle{position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--dim);background:none;border:none;padding:4px;z-index:5}
     .pw-toggle:hover{color:var(--gold)}
     .sort-row{display:flex;gap:8px;padding:8px 16px;flex-wrap:wrap;justify-content:center}
@@ -165,7 +165,7 @@
     .tactic-card .tac-sub.locked{opacity:.4}
     .tactic-card .tac-sub .tac-dot-sm{width:12px;height:12px;border-radius:50%;flex-shrink:0;border:2px solid var(--bdr);display:inline-flex;align-items:center;justify-content:center}
     .tactic-card .tac-sub.done .tac-dot-sm{background:var(--gold);border-color:var(--gold)}
-    .tactic-card .tac-sub.done .tac-dot-sm::after{content:'';color:#0a0a0a;font-size:8px;font-weight:bold}
+    .tactic-card .tac-sub.done .tac-dot-sm::after{content:'✓';color:#0a0a0a;font-size:8px;font-weight:bold}
     .tactic-card .tac-sub.current .tac-dot-sm{border-color:var(--gold)}
     .tactic-card .tac-sub.locked .tac-dot-sm{border-color:var(--dim)}
     .tactic-card .tac-sub .tac-plus-sm{font-size:9px;color:var(--gold);font-weight:bold;margin-left:auto;flex-shrink:0}
@@ -338,7 +338,17 @@
   const ICON={swords:'<path d="M14.5 17.5L3 6V3h3l11.5 11.5M14.5 17.5l2 2.5M7 7l-1 1M21 3l-9 9M9 15L3 21"/>',shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',chart:'<rect x="18" y="3" width="3" height="18"/><rect x="10.5" y="8" width="3" height="13"/><rect x="3" y="13" width="3" height="8"/>',trophy:'<path d="M6 9H4a2 2 0 01-2-2V5h4M18 9h2a2 2 0 002-2V5h-4"/><path d="M8 21h10M12 17v4M7 4h10v7a5 5 0 01-10 0V4z"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>',crown:'<path d="M2 20h20M5 20l2-10 5 5 5-7 2 12"/><circle cx="12" cy="8" r="1" fill="currentColor"/>',logout:'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>',check:'<path d="M20 6L9 17l-5-5"/>',trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/>',edit:'<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>',lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>',eye:'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',eyeoff:'<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22"/>',refresh:'<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>',chevdown:'<polyline points="6 9 12 15 18 9"/>',chevleft:'<polyline points="15 18 9 12 15 6"/>',chevright:'<polyline points="9 18 15 12 9 6"/>',alert:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'};
   const ic=(n,sz=20,col='currentColor')=>`<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="${col}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICON[n]||''}</svg>`;
 
-  function dname(u,g){if(u===CONFIG.SPECIAL_USERS.ANCIENT)return'The Ancient Enemy';if(u===CONFIG.SPECIAL_USERS.GUEST)return g?.guestName||'Guest Player';if(u === '__deleted__') { const dn = g?.displayName1 || g?.displayName2 || 'Deleted User'; return dn + ' (deleted)'; } return u;}
+  function dname(u, g) {
+    if (!u || u === 'undefined' || u === 'null') return 'Unknown Player';
+    if (u === CONFIG.SPECIAL_USERS.ANCIENT) return 'The Ancient Enemy';
+    if (u === CONFIG.SPECIAL_USERS.GUEST) return g?.guestname || 'Guest Player';
+    if (u === '__deleted__') {
+      const dn = g?.displayname1 || g?.displayname2 || 'Deleted User';
+      return dn + ' (deleted)';
+    }
+    return u;
+  }
+
   function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
   function toast(m,e){const w=document.getElementById('toast-wrap');if(!w)return;const d=document.createElement('div');d.className='toast'+(e?' err':'');d.textContent=m;w.appendChild(d);setTimeout(()=>{d.style.opacity='0';d.style.transition='opacity .3s';setTimeout(()=>d.remove(),300);},3000);}
 
@@ -349,7 +359,7 @@
   const { placeholder = '••••••••', enterAction = '', value = '', oninput = '' } = o;
   const id = 'pw-'+bind.replace(/\./g,'-');
   return `<div style="position:relative"><input class="inp" id="${id}" data-bind="${bind}" type="password" placeholder="${esc(placeholder)}" value="${esc(value)}" ${enterAction ? `data-enter="${enterAction}"` : ''} ${oninput ? `oninput="${oninput}"` : ''} autocomplete="off" style="padding-right:44px"><button type="button" class="pw-toggle" data-pw-toggle="${id}" onclick="UI.togglePassword('${id}')" tabindex="-1">${ic('eye',16)}</button></div>`;
-},togglePassword(id){const i=document.getElementById(id);if(!i)return;const p=i.type==='password';i.type=p?'text':'password';i.focus();const b=document.querySelector(`[data-pw-toggle="${id}"]`);if(b)b.innerHTML=ic(p?'eyeoff':'eye',16);},emptyState(m){return`<div class="card" style="text-align:center;color:var(--dim);font-style:italic">${esc(m)}</div>`;},resourceStepper(bind,value,o={}){const{min=0,max=99,step=1,color='var(--gold)',label=''}=o;return`<div class="game-track-row"><span class="game-track-label" style="color:${color}">${esc(label)}</span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjResourceDOM('${bind}',${-step},${min},${max})"></div><div class="game-track-val" id="res-${bind}" style="color:${color}">${value}</div><div class="game-track-btn" onclick="Actions.adjResourceDOM('${bind}',${step},${min},${max})">+</div></div></div>`;},vpStepper(bind,v,o={}){const{step=1,label='',max=99}=o;return`<div class="game-track-row"><span class="game-track-label" style="width:52px">${esc(label)}</span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjStepperDOM('${bind}',${-step},${max})"></div><div class="game-track-val" id="vp-${bind.replace(/\./g,'-')}">${v}</div><div class="game-track-btn" onclick="Actions.adjStepperDOM('${bind}',${step},${max})">+</div></div><div class="game-track-full"></div></div>`;},factionDropdown(bind,currentVal){let opts='<option value="">Select faction</option>';Object.entries(FACTIONS).forEach(([ga,fs])=>{opts+=`<optgroup label="${ga}">`;fs.forEach(f=>{opts+=`<option value="${esc(f)}" ${currentVal===f?'selected':''}>${esc(f)}</option>`;});opts+='</optgroup>';});return`<select class="tac-select" onchange="S.${bind}=this.value">${opts}</select>`;},scenarioDropdown(bind,currentVal){let opts='<option value="">Select battle plan</option>';CONFIG.BATTLE_PLANS.forEach(p=>{opts+=`<option value="${esc(p)}" ${currentVal===p?'selected':''}>${esc(p)}</option>`;});return`<select class="tac-select" onchange="S.${bind}=this.value">${opts}</select>`;},spacer:(h=120)=>`<div style="height:${h}px;width:100%;"></div>`};
+},togglePassword(id){const i=document.getElementById(id);if(!i)return;const p=i.type==='password';i.type=p?'text':'password';i.focus();const b=document.querySelector(`[data-pw-toggle="${id}"]`);if(b)b.innerHTML=ic(p?'eyeoff':'eye',16);},emptyState(m){return`<div class="card" style="text-align:center;color:var(--dim);font-style:italic">${esc(m)}</div>`;},resourceStepper(bind,value,o={}){const{min=0,max=99,step=1,color='var(--gold)',label=''}=o;return`<div class="game-track-row"><span class="game-track-label" style="color:${color}">${esc(label)}</span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjResourceDOM('${bind}',${-step},${min},${max})">−</div><div class="game-track-val" id="res-${bind}" style="color:${color}">${value}</div><div class="game-track-btn" onclick="Actions.adjResourceDOM('${bind}',${step},${min},${max})">+</div></div></div>`;},vpStepper(bind,v,o={}){const{step=1,label='',max=99}=o;return`<div class="game-track-row"><span class="game-track-label" style="width:52px">${esc(label)}</span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjStepperDOM('${bind}',${-step},${max})">−</div><div class="game-track-val" id="vp-${bind.replace(/\./g,'-')}">${v}</div><div class="game-track-btn" onclick="Actions.adjStepperDOM('${bind}',${step},${max})">+</div></div><div class="game-track-full"></div></div>`;},factionDropdown(bind,currentVal){let opts='<option value="">Select faction</option>';Object.entries(FACTIONS).forEach(([ga,fs])=>{opts+=`<optgroup label="${ga}">`;fs.forEach(f=>{opts+=`<option value="${esc(f)}" ${currentVal===f?'selected':''}>${esc(f)}</option>`;});opts+='</optgroup>';});return`<select class="tac-select" onchange="S.${bind}=this.value">${opts}</select>`;},scenarioDropdown(bind,currentVal){let opts='<option value="">Select battle plan</option>';CONFIG.BATTLE_PLANS.forEach(p=>{opts+=`<option value="${esc(p)}" ${currentVal===p?'selected':''}>${esc(p)}</option>`;});return`<select class="tac-select" onchange="S.${bind}=this.value">${opts}</select>`;},spacer:(h=120)=>`<div style="height:${h}px;width:100%;"></div>`};
 
   const TacticManager={getBestProgress(player,tacticIdx,upToRound){let best=-1;for(let r=0;r<=upToRound;r++){const rProg=S.battle.tacticProgress[r]?(S.battle.tacticProgress[r][player]||{}):{};if(rProg[tacticIdx]!==undefined&&rProg[tacticIdx]>best)best=rProg[tacticIdx];}return best;},hasNewSubThisRound(player,tacticIdx,roundKey){const curProg=S.battle.tacticProgress[roundKey]?(S.battle.tacticProgress[roundKey][player]||{}):{};const prevProg=S.battle.tacticProgress[roundKey-1]?(S.battle.tacticProgress[roundKey-1][player]||{}):{};const cur=curProg[tacticIdx]!==undefined?curProg[tacticIdx]:-1;const prev=prevProg[tacticIdx]!==undefined?prevProg[tacticIdx]:-1;return cur>prev;},canSelectSub(player,tacticIdx,subIdx,roundKey){const best=this.getBestProgress(player,tacticIdx,roundKey);if(subIdx!==best+1)return false;return!this.hasNewSubThisRound(player,tacticIdx,roundKey);},canDeselectSub(player,tacticIdx,subIdx,roundKey){const best=this.getBestProgress(player,tacticIdx,roundKey);if(subIdx!==best||subIdx<0)return false;return this.hasNewSubThisRound(player,tacticIdx,roundKey);},getCurrentProgress(player,roundKey){const progress={};for(let r=0;r<=roundKey;r++){const rProg=S.battle.tacticProgress[r]?(S.battle.tacticProgress[r][player]||{}):{};for(let ti in rProg){if(progress[ti]===undefined||rProg[ti]>progress[ti])progress[ti]=rProg[ti];}}return progress;}};
 
@@ -367,6 +377,34 @@
         addedThisRound: []
       }
     };
+  }
+
+  // Helper to sanitize rounds after draft load (ensures p1ft/p2ft objects are complete)
+  function sanitizeRounds(rounds) {
+    const defaultFT = {
+      track: null, step: 0, active: null, value: 0, used: [],
+      roll: null, mustChange: false, previous: 0, resetUsed: false,
+      activeBlessings: [], addedThisRound: []
+    };
+    return rounds.map(r => {
+      // Ensure basic numeric fields
+      if (r.vp1 === undefined) r.vp1 = 0;
+      if (r.vp2 === undefined) r.vp2 = 0;
+      if (r.p1 === undefined) r.p1 = 0;
+      if (r.p2 === undefined) r.p2 = 0;
+      if (r.t1 === undefined) r.t1 = 0;
+      if (r.t2 === undefined) r.t2 = 0;
+      // Ensure p1ft and p2ft objects
+      if (!r.p1ft || typeof r.p1ft !== 'object') r.p1ft = { ...defaultFT };
+      else {
+        for (let k in defaultFT) if (r.p1ft[k] === undefined) r.p1ft[k] = defaultFT[k];
+      }
+      if (!r.p2ft || typeof r.p2ft !== 'object') r.p2ft = { ...defaultFT };
+      else {
+        for (let k in defaultFT) if (r.p2ft[k] === undefined) r.p2ft[k] = defaultFT[k];
+      }
+      return r;
+    });
   }
 
   async function loadProfile(username) {
@@ -414,7 +452,6 @@
     if (error) throw error;
   }
 
-  //  DRAFT STORAGE (localStorage) 
   function loadDraft(username) {
     try {
       const raw = localStorage.getItem('draft_' + username);
@@ -428,7 +465,6 @@
     try {
       localStorage.setItem('draft_' + username, JSON.stringify(draftData));
     } catch (e) {
-      // Silently handle quota errors
     }
   }
 
@@ -436,7 +472,6 @@
     try {
       localStorage.removeItem('draft_' + username);
     } catch (e) {
-      // ignore
     }
   }
 
@@ -479,7 +514,6 @@
     await supabaseClient.auth.signOut();
   }
 
-  //  GLOBAL STATE 
   const S = {
     auth: { session: null, loginUser: '', loginPw: '', loginError: '', loginMode: 'login' },
     register: { user: '', pw: '', conf: '', factions: [], error: '' },
@@ -513,17 +547,14 @@
     _allGames: []
   };
 
-  // Make S globally accessible so oninput can update it
   window.S = S;
 
   const DataCache = {
     get users() { return S._allUsers; },
     get games() { return S._allGames; },
-    user(un) { return this.users[un] || null; },
-    invalidate() { /* no-op */ }
+    user(un) { return this.users[un] || null; }
   };
 
-  //  ACTIONS 
   const Actions = {
     goToTab: function(i) {
       if (i === 1 && S.battle.step !== 0) {
@@ -615,7 +646,6 @@
           displayName: username,
           factions: S.register.factions || []
         });
-        // Sign out to return to login screen
         await signOut();
         S.auth.session = null;
         S.register.user = '';
@@ -651,12 +681,12 @@
       S.ui.modifyGameId = id;
       const g = DataCache.games.find(g => g.id === id);
       if (g) {
-        S.ui.modifyVP1 = String(g.totalVP1);
-        S.ui.modifyVP2 = String(g.totalVP2);
-        S.ui.modifyWinner = g.winner;
+        S.ui.modifyVP1 = String(g.totalvp1 || 0);
+        S.ui.modifyVP2 = String(g.totalvp2 || 0);
+        S.ui.modifyWinner = g.winner || '';
         S.ui.modifyNotes = g.notes || '';
-        S.ui.modifyTTS = g.isTTS || false;
-        S.ui.modifyTournament = g.isTournament || false;
+        S.ui.modifyTTS = g.istts || false;
+        S.ui.modifyTournament = g.istournament || false;
       }
       render(true);
     },
@@ -665,13 +695,13 @@
     saveModifiedGame: async function() {
       const g = DataCache.games.find(g => g.id === S.ui.modifyGameId);
       if (!g) return;
-      g.totalVP1 = parseInt(S.ui.modifyVP1) || 0;
-      g.totalVP2 = parseInt(S.ui.modifyVP2) || 0;
+      g.totalvp1 = parseInt(S.ui.modifyVP1) || 0;
+      g.totalvp2 = parseInt(S.ui.modifyVP2) || 0;
       g.winner = S.ui.modifyWinner;
       g.notes = S.ui.modifyNotes;
-      g.manuallyUpdated = true;
-      g.isTTS = S.ui.modifyTTS || false;
-      g.isTournament = S.ui.modifyTournament || false;
+      g.manuallyupdated = true;
+      g.istts = S.ui.modifyTTS || false;
+      g.istournament = S.ui.modifyTournament || false;
       await saveGame(g);
       await loadAllData();
       toast('Game updated.');
@@ -733,7 +763,7 @@
         notes: notes,
         loggedBy: S.auth.session.username,
         isSample: false,
-        guestName: oppName,
+        guestname: oppName,   // <-- fixed: lowercase 'n'
         manuallyEntered: true,
         isTTS: tts,
         isTournament: tourn || false,
@@ -883,7 +913,6 @@
       S.battle.tideState = { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
       S.battle._prevTideState = { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
       
-      // Immediate draft save for recovery
       saveDraft(S.auth.session.username, {
         step: S.battle.step,
         opponentUsername: S.battle.opponent.username,
@@ -1290,21 +1319,23 @@
       const user = DataCache.user(username);
       const displayName = user?.displayName || username;
 
-      // 1. First update all games to replace username with '__deleted__'
       const games = DataCache.games.filter(g => g.player1 === username || g.player2 === username);
       for (const g of games) {
         if (g.player1 === username) {
           g.player1 = '__deleted__';
-          g.displayName1 = displayName;
+          g.displayname1 = displayName;
         }
         if (g.player2 === username) {
           g.player2 = '__deleted__';
-          g.displayName2 = displayName;
+          g.displayname2 = displayName;
         }
-        await saveGame(g);
+        const result = await saveGame(g);
+        if (!result) {
+          toast('Failed to update a game. Aborting delete.', true);
+          return;
+        }
       }
 
-      // 2. Now delete the profile
       const { error } = await supabaseClient.from('profiles').delete().eq('username', username);
       if (error) {
         toast('Delete failed: ' + error.message, true);
@@ -1402,27 +1433,35 @@
     cancelDeleteUser: function() { S.admin.confDel = null; S.admin.delInput = ''; render(true); },
 
     doDeleteUser: async function(u) {
-      if (S.admin.delInput !== u) { toast('Username mismatch.', true); return; }
+      if (S.admin.delInput !== u) {
+        toast('Username mismatch.', true);
+        return;
+      }
       const user = DataCache.user(u);
       const displayName = user?.displayName || u;
 
-      // 1. Update games first
       const games = DataCache.games.filter(g => g.player1 === u || g.player2 === u);
       for (const g of games) {
         if (g.player1 === u) {
           g.player1 = '__deleted__';
-          g.displayName1 = displayName;
+          g.displayname1 = displayName;
         }
         if (g.player2 === u) {
           g.player2 = '__deleted__';
-          g.displayName2 = displayName;
+          g.displayname2 = displayName;
         }
-        await saveGame(g);
+        const result = await saveGame(g);
+        if (!result) {
+          toast('Failed to update a game. Aborting delete.', true);
+          return;
+        }
       }
 
-      // 2. Delete profile
       const { error } = await supabaseClient.from('profiles').delete().eq('username', u);
-      if (error) { toast('Delete failed: ' + error.message, true); return; }
+      if (error) {
+        toast('Delete failed: ' + error.message, true);
+        return;
+      }
 
       await loadAllData();
       toast('Account deleted. Games preserved.');
@@ -1457,11 +1496,15 @@
       const draft = migrateDraft(draftData);
       const b = S.battle;
       b.step = draft.step;
-      b.opponent = { username: draft.opponentUsername, displayName: draft.opponentDisplayName, factions: draft.opponentFactions || [] };
+      b.opponent = {
+        username: draft.opponentUsername,
+        displayName: draft.opponentDisplayName || draft.opponentUsername || 'Guest Player', // fixed fallback
+        factions: draft.opponentFactions || []
+      };
       b.faction1 = draft.faction1;
       b.faction2 = draft.faction2;
       b.scenario = draft.scenario;
-      b.rounds = draft.rounds || [];
+      b.rounds = draft.rounds ? sanitizeRounds(draft.rounds) : []; // sanitize rounds
       b.currentRound = draft.currentRound || 0;
       b.winner = draft.winner;
       b.notes = draft.notes || '';
@@ -1760,7 +1803,7 @@
       toast('Exported ' + filename);
     }
   };
-  // ─── PART 2 ─────────────────────────────────────────────────────────  // ─── DRAFT MIGRATION ──────────────────────────────────────────────
+
   function migrateDraft(draft) {
     if (draft.khorne && !draft.khorne.p1) {
       const old = draft.khorne;
@@ -1829,8 +1872,6 @@
       t = setTimeout(() => fn.apply(this, args), delay);
     };
   }
-
-  // ─── RENDER FUNCTIONS ──────────────────────────────────────────────
 
   function renderLogin() {
     const shared = '<div class="login-wrap"><div class="login-logo"><div style="font-size:40px;margin-bottom:8px">⚔️</div><div class="login-title">Age of Sigmar<br>Battle Tracker</div><div class="login-sub">"Warducks... Assemble"</div><div style="font-size:10px; color:var(--dim); margin-top:4px; opacity:0.7; letter-spacing:0.05em;">v0.9.9 – Supabase</div></div><div class="login-box">';
@@ -2280,7 +2321,6 @@
       }).join('');
     }
 
-    // ─── DRAFT CARD – reads directly from localStorage ──────────────
     let draftHTML = '';
     if (S.auth.session) {
       try {
@@ -2316,8 +2356,8 @@
       const g = DataCache.games.find(g => g.id === S.ui.modifyGameId);
       if (g) {
         modifySheet = '<div class="overlay" onclick="Actions.closeModifyGame()"><div class="sheet" onclick="event.stopPropagation()"><div class="sh-handle"></div><div class="sh-head">Modify Game Result</div><div class="sh-body" style="padding:0 16px 16px"><div class="game-summary" style="margin-bottom:12px">' + esc(dname(g.player1, g)) + ' vs ' + esc(dname(g.player2, g)) + ' — ' + g.date + '</div>' +
-          UI.formField('Player 1 VP', UI.textInput('ui.modifyVP1', { value: S.ui.modifyVP1, placeholder: 'VP' })) +
-          UI.formField('Player 2 VP', UI.textInput('ui.modifyVP2', { value: S.ui.modifyVP2, placeholder: 'VP' })) +
+          UI.formField('Player 1 VP', UI.textInput('ui.modifyVP1', { value: S.ui.modifyVP1, placeholder: 'VP', oninput: 'S.ui.modifyVP1=this.value' })) +
+          UI.formField('Player 2 VP', UI.textInput('ui.modifyVP2', { value: S.ui.modifyVP2, placeholder: 'VP', oninput: 'S.ui.modifyVP2=this.value' })) +
           UI.formField('Winner', '<select class="tac-select" onchange="S.ui.modifyWinner=this.value"><option value="">Select winner</option><option value="' + esc(g.player1) + '" ' + (S.ui.modifyWinner === g.player1 ? 'selected' : '') + '>' + esc(dname(g.player1, g)) + '</option><option value="' + esc(g.player2) + '" ' + (S.ui.modifyWinner === g.player2 ? 'selected' : '') + '>' + esc(dname(g.player2, g)) + '</option><option value="draw" ' + (S.ui.modifyWinner === 'draw' ? 'selected' : '') + '>Draw</option></select>') +
           UI.formField('Notes', UI.textInput('ui.modifyNotes', { value: S.ui.modifyNotes, placeholder: 'Optional notes' })) +
           '<div class="check-row"><label><input type="checkbox" ' + (S.ui.modifyTTS ? 'checked' : '') + ' onchange="S.ui.modifyTTS=this.checked"> TTS Game</label></div>' +
@@ -2674,9 +2714,7 @@
     return '<div class="adm-head"><div style="display:flex;align-items:center;gap:10px">' + ic('crown', 20, '#a07830') + '<div class="adm-title">Grand Marshal\'s Chamber</div></div><div style="font-size:12px;color:var(--gold2);margin-top:3px;font-style:italic">Administrative Access</div></div>' + UI.tabRow(tabs, S.admin.tab, 'Actions.setAdminTab') + ct + UI.spacer();
   }
 
-  // ─── INIT ──────────────────────────────────────────────────────────
   async function loadAllData() {
-    // 1. Load all profiles
     const { data: profiles, error: profilesError } = await supabaseClient
       .from('profiles')
       .select('*');
@@ -2696,7 +2734,6 @@
       };
     });
 
-    // 2. Load ALL games (not just the logged‑in user’s)
     const { data: allGames, error: gamesError } = await supabaseClient
       .from('games')
       .select('*');
@@ -2739,7 +2776,6 @@
       }
       await loadAllData();
 
-      // ─── LOAD DRAFT EARLY (synchronous) ────────────────────────────
       if (S.auth.session) {
         const draft = loadDraft(S.auth.session.username);
         S.ui.draftData = draft || null;
@@ -2854,7 +2890,7 @@
   window.UI = UI;
   window.TacticManager = TacticManager;
 
-})(); // end IIFE
+})();
 </script>
 </body>
   </html>
