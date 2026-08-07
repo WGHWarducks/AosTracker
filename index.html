@@ -2676,6 +2676,7 @@
 
   // ─── INIT ──────────────────────────────────────────────────────────
   async function loadAllData() {
+    // 1. Load all profiles
     const { data: profiles, error: profilesError } = await supabaseClient
       .from('profiles')
       .select('*');
@@ -2694,10 +2695,16 @@
         draws: p.draws,
       };
     });
-    if (S.auth.session) {
-      S._allGames = await loadGamesForUser(S.auth.session.username);
-    } else {
+
+    // 2. Load ALL games (not just the logged‑in user’s)
+    const { data: allGames, error: gamesError } = await supabaseClient
+      .from('games')
+      .select('*');
+    if (gamesError) {
+      console.error('Error loading games:', gamesError);
       S._allGames = [];
+    } else {
+      S._allGames = allGames || [];
     }
   }
 
@@ -2839,10 +2846,6 @@
     }).join('') + '</nav>';
   }
 
-  // ─── SAVE GAME (with all lowercase keys) ──────────────────────────
-  // (Already defined inside Actions – keep the updated version)
-  // For completeness, the saveGame function in Actions should use lowercase keys.
-
   initApp();
 
   window.Actions = Actions;
@@ -2854,4 +2857,4 @@
 })(); // end IIFE
 </script>
 </body>
-</html>
+  </html>
