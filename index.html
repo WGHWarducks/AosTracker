@@ -286,15 +286,16 @@
     }
   };
 
+  // KHORNE TREE – corrected costs and OR/AND logic
   const KHORNE_TREE = {
-    murderlust: { id: 'murderlust', name: 'Murderlust', cost: 0, parents: [], desc: 'Roll extra charge die, suffer D3 mortals' },
-    divine_scorn: { id: 'divine_scorn', name: 'Divine Scorn', cost: 1, parents: ['murderlust'], desc: 'Weakens wizards/priests near Khorne units' },
-    punish_pacifist: { id: 'punish_pacifist', name: 'Punish the Pacifist', cost: 1, parents: ['murderlust'], desc: 'Harms units that avoided combat' },
-    murder_mystic: { id: 'murder_mystic', name: 'Murder the Mystic', cost: 2, parents: ['divine_scorn'], desc: 'Deal with Manifestations' },
-    revel: { id: 'revel', name: 'Revel in Battle', cost: 2, parents: ['punish_pacifist'], desc: 'Cancel enemy weapon abilities' },
-    glorious: { id: 'glorious', name: 'Glorious Combat or Naught', cost: 3, parents: ['divine_scorn', 'punish_pacifist'], desc: 'A unit that kills something gains...' },
-    slaughter: { id: 'slaughter', name: 'Slaughter Triumphant', cost: 3, parents: ['murder_mystic', 'glorious'], desc: '+1 Attack on charge' },
-    cleave: { id: 'cleave', name: 'Cleave Wide the Grin of Khorne', cost: 4, parents: ['glorious', 'revel'], desc: '+1 to hit in combat' }
+    murderlust: { id: 'murderlust', name: 'Murderlust', cost: 0, parents: [], parentType: 'none', desc: 'Roll extra charge die, suffer D3 mortals' },
+    divine_scorn: { id: 'divine_scorn', name: 'Divine Scorn', cost: 1, parents: ['murderlust'], parentType: 'and', desc: 'Weakens wizards/priests near Khorne units' },
+    punish_pacifist: { id: 'punish_pacifist', name: 'Punish the Pacifist', cost: 1, parents: ['murderlust'], parentType: 'and', desc: 'Harms units that avoided combat' },
+    murder_mystic: { id: 'murder_mystic', name: 'Murder the Mystic', cost: 2, parents: ['divine_scorn'], parentType: 'and', desc: 'Deal with Manifestations' },
+    glorious: { id: 'glorious', name: 'Glorious Combat or Naught', cost: 2, parents: ['divine_scorn', 'punish_pacifist'], parentType: 'or', desc: 'A unit that kills something gains...' },
+    revel: { id: 'revel', name: 'Revel in Battle', cost: 3, parents: ['punish_pacifist'], parentType: 'and', desc: 'Cancel enemy weapon abilities' },
+    slaughter: { id: 'slaughter', name: 'Slaughter Triumphant', cost: 4, parents: ['murder_mystic', 'glorious'], parentType: 'or', desc: '+1 Attack on charge' },
+    cleave: { id: 'cleave', name: 'Cleave Wide the Grin of Khorne', cost: 4, parents: ['glorious', 'revel'], parentType: 'or', desc: '+1 to hit in combat' }
   };
   const KHORNE_ORDER = ['murderlust','divine_scorn','punish_pacifist','murder_mystic','revel','glorious','slaughter','cleave'];
 
@@ -350,7 +351,7 @@
   const { placeholder = '••••••••', enterAction = '', value = '', oninput = '' } = o;
   const id = 'pw-'+bind.replace(/\./g,'-');
   return `<div style="position:relative"><input class="inp" id="${id}" data-bind="${bind}" type="password" placeholder="${esc(placeholder)}" value="${esc(value)}" ${enterAction ? `data-enter="${enterAction}"` : ''} ${oninput ? `oninput="${oninput}"` : ''} autocomplete="off" style="padding-right:44px"><button type="button" class="pw-toggle" data-pw-toggle="${id}" onclick="UI.togglePassword('${id}')" tabindex="-1">${ic('eye',16)}</button></div>`;
-},togglePassword(id){const i=document.getElementById(id);if(!i)return;const p=i.type==='password';i.type=p?'text':'password';i.focus();const b=document.querySelector(`[data-pw-toggle="${id}"]`);if(b)b.innerHTML=ic(p?'eyeoff':'eye',16);},emptyState(m){return`<div class="card" style="text-align:center;color:var(--dim);font-style:italic">${esc(m)}</div>`;},resourceStepper(bind,value,o={}){const{min=0,max=99,step=1,color='var(--gold)',label=''}=o;return`<div class="game-track-row"><span class="game-track-label" style="color:${color}">${esc(label)}</span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjResourceDOM('${bind}',${-step},${min},${max})"></div><div class="game-track-val" id="res-${bind}" style="color:${color}">${value}</div><div class="game-track-btn" onclick="Actions.adjResourceDOM('${bind}',${step},${min},${max})">+</div></div></div>`;},vpStepper(bind,v,o={}){const{step=1,label='',max=99}=o;return`<div class="game-track-row"><span class="game-track-label" style="width:52px">${esc(label)}</span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjStepperDOM('${bind}',${-step},${max})"></div><div class="game-track-val" id="vp-${bind.replace(/\./g,'-')}">${v}</div><div class="game-track-btn" onclick="Actions.adjStepperDOM('${bind}',${step},${max})">+</div></div><div class="game-track-full"></div></div>`;},factionDropdown(bind,currentVal){let opts='<option value="">Select faction</option>';Object.entries(FACTIONS).forEach(([ga,fs])=>{opts+=`<optgroup label="${ga}">`;fs.forEach(f=>{opts+=`<option value="${esc(f)}" ${currentVal===f?'selected':''}>${esc(f)}</option>`;});opts+='</optgroup>';});return`<select class="tac-select" onchange="S.${bind}=this.value">${opts}</select>`;},scenarioDropdown(bind,currentVal){let opts='<option value="">Select battle plan</option>';CONFIG.BATTLE_PLANS.forEach(p=>{opts+=`<option value="${esc(p)}" ${currentVal===p?'selected':''}>${esc(p)}</option>`;});return`<select class="tac-select" onchange="S.${bind}=this.value">${opts}</select>`;},spacer:(h=120)=>`<div style="height:${h}px;width:100%;"></div>`};
+},togglePassword(id){const i=document.getElementById(id);if(!i)return;const p=i.type==='password';i.type=p?'text':'password';i.focus();const b=document.querySelector(`[data-pw-toggle="${id}"]`);if(b)b.innerHTML=ic(p?'eyeoff':'eye',16);},emptyState(m){return`<div class="card" style="text-align:center;color:var(--dim);font-style:italic">${esc(m)}</div>`;},resourceStepper(bind,value,o={}){const{min=0,max=99,step=1,color='var(--gold)',label=''}=o;return`<div class="game-track-row"><span class="game-track-label" style="color:${color}">${esc(label)}</span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjResourceDOM('${bind}',${-step},${min},${max})">-</div><div class="game-track-val" id="res-${bind}" style="color:${color}">${value}</div><div class="game-track-btn" onclick="Actions.adjResourceDOM('${bind}',${step},${min},${max})">+</div></div></div>`;},vpStepper(bind,v,o={}){const{step=1,label='',max=99}=o;return`<div class="game-track-row"><span class="game-track-label" style="width:52px">${esc(label)}</span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjStepperDOM('${bind}',${-step},${max})">-</div><div class="game-track-val" id="vp-${bind.replace(/\./g,'-')}">${v}</div><div class="game-track-btn" onclick="Actions.adjStepperDOM('${bind}',${step},${max})">+</div></div><div class="game-track-full"></div></div>`;},factionDropdown(bind,currentVal){let opts='<option value="">Select faction</option>';Object.entries(FACTIONS).forEach(([ga,fs])=>{opts+=`<optgroup label="${ga}">`;fs.forEach(f=>{opts+=`<option value="${esc(f)}" ${currentVal===f?'selected':''}>${esc(f)}</option>`;});opts+='</optgroup>';});return`<select class="tac-select" onchange="S.${bind}=this.value">${opts}</select>`;},scenarioDropdown(bind,currentVal){let opts='<option value="">Select battle plan</option>';CONFIG.BATTLE_PLANS.forEach(p=>{opts+=`<option value="${esc(p)}" ${currentVal===p?'selected':''}>${esc(p)}</option>`;});return`<select class="tac-select" onchange="S.${bind}=this.value">${opts}</select>`;},spacer:(h=120)=>`<div style="height:${h}px;width:100%;"></div>`};
 
   const TacticManager={getBestProgress(player,tacticIdx,upToRound){let best=-1;for(let r=0;r<=upToRound;r++){const rProg=S.battle.tacticProgress[r]?(S.battle.tacticProgress[r][player]||{}):{};if(rProg[tacticIdx]!==undefined&&rProg[tacticIdx]>best)best=rProg[tacticIdx];}return best;},hasNewSubThisRound(player,tacticIdx,roundKey){const curProg=S.battle.tacticProgress[roundKey]?(S.battle.tacticProgress[roundKey][player]||{}):{};const prevProg=S.battle.tacticProgress[roundKey-1]?(S.battle.tacticProgress[roundKey-1][player]||{}):{};const cur=curProg[tacticIdx]!==undefined?curProg[tacticIdx]:-1;const prev=prevProg[tacticIdx]!==undefined?prevProg[tacticIdx]:-1;return cur>prev;},canSelectSub(player,tacticIdx,subIdx,roundKey){const best=this.getBestProgress(player,tacticIdx,roundKey);if(subIdx!==best+1)return false;return!this.hasNewSubThisRound(player,tacticIdx,roundKey);},canDeselectSub(player,tacticIdx,subIdx,roundKey){const best=this.getBestProgress(player,tacticIdx,roundKey);if(subIdx!==best||subIdx<0)return false;return this.hasNewSubThisRound(player,tacticIdx,roundKey);},getCurrentProgress(player,roundKey){const progress={};for(let r=0;r<=roundKey;r++){const rProg=S.battle.tacticProgress[r]?(S.battle.tacticProgress[r][player]||{}):{};for(let ti in rProg){if(progress[ti]===undefined||rProg[ti]>progress[ti])progress[ti]=rProg[ti];}}return progress;}};
 
@@ -415,7 +416,6 @@
     if (error) throw error;
   }
 
-  //  DRAFT STORAGE (localStorage) 
   function loadDraft(username) {
     try {
       const raw = localStorage.getItem('draft_' + username);
@@ -480,7 +480,9 @@
     await supabaseClient.auth.signOut();
   }
 
-  //  GLOBAL STATE 
+  // ------------------------------------------------------------------
+  // GLOBAL STATE
+  // ------------------------------------------------------------------
   const S = {
     auth: { session: null, loginUser: '', loginPw: '', loginError: '', loginMode: 'login' },
     register: { user: '', pw: '', conf: '', factions: [], error: '' },
@@ -515,7 +517,6 @@
     _allGames: []
   };
 
-  // Make S globally accessible so oninput can update it
   window.S = S;
 
   const DataCache = {
@@ -525,7 +526,9 @@
     invalidate() { /* no-op */ }
   };
 
-  //  ACTIONS 
+  // ------------------------------------------------------------------
+  // ACTIONS (PART 1) – up to toggleKhorneAbility
+  // ------------------------------------------------------------------
   const Actions = {
     goToTab: function(i) {
       if (i === 1 && S.battle.step !== 0) {
@@ -600,7 +603,6 @@
           render(true);
         }
       } catch (e) {
-        // Replace Supabase's "Invalid login credentials" with "Incorrect Password"
         let msg = e.message || 'Login failed.';
         if (msg.includes('Invalid login credentials')) {
           msg = 'Incorrect Password. Please try again.';
@@ -622,7 +624,6 @@
           displayName: username,
           factions: S.register.factions || []
         });
-        // Sign out to return to login screen
         await signOut();
         S.auth.session = null;
         S.register.user = '';
@@ -886,7 +887,6 @@
       S.battle.manualUnderdog = false;
       S.battle.resources = { p1fury:0, p1rage:0, p1cp: CONFIG.STARTING_CP, p2fury:0, p2rage:0, p2cp: CONFIG.STARTING_CP };
       S.battle.khorne = { p1: { points:0, unlocked:[] }, p2: { points:0, unlocked:[] } };
-      // Auto-unlock Murderlust for Khorne players
       if (S.battle.faction1 === 'Blades of Khorne') {
         S.battle.khorne.p1.unlocked.push('murderlust');
       }
@@ -897,7 +897,6 @@
       S.battle.tideState = { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
       S.battle._prevTideState = { p1: { track: null, step: 0 }, p2: { track: null, step: 0 } };
       
-      // Immediate draft save for recovery
       saveDraft(S.auth.session.username, {
         step: S.battle.step,
         opponentUsername: S.battle.opponent.username,
@@ -1148,14 +1147,11 @@
 
     backToScore: function() { S.battle.step = 1; saveDraftDebounced(); render(true); },
 
-    // UPDATED: guarded saveGame with double-click prevention
     saveGame: async function() {
-      // Prevent multiple clicks while saving
       if (S.ui.saving) return;
       S.ui.saving = true;
-      render(true);  // immediately show "Saving..." button
-
-      toast(' Saving battle...', false);
+      render(true);
+      toast('Saving battle...', false);
       if (!S.battle.winner) {
         toast('Declare a winner first.', true);
         S.ui.saving = false;
@@ -1213,8 +1209,6 @@
         }
 
         toast('Battle recorded!');
-
-        // Reset battle state
         S.battle.step = 0;
         S.battle.opponent = null;
         S.battle.faction1 = S.auth.session.factions[0] || '';
@@ -1245,7 +1239,7 @@
         render(true);
 
       } catch (err) {
-        toast(' Save failed: ' + (err.message || err), true);
+        toast('Save failed: ' + (err.message || err), true);
         console.error('saveGame error:', err);
         S.ui.saving = false;
         render(true);
@@ -1324,7 +1318,6 @@
       const user = DataCache.user(username);
       const displayName = user?.displayName || username;
 
-      // 1. First update all games to replace username with '__deleted__'
       const games = DataCache.games.filter(g => g.player1 === username || g.player2 === username);
       for (const g of games) {
         if (g.player1 === username) {
@@ -1338,7 +1331,6 @@
         await saveGame(g);
       }
 
-      // 2. Now delete the profile
       const { error } = await supabaseClient.from('profiles').delete().eq('username', username);
       if (error) {
         toast('Delete failed: ' + error.message, true);
@@ -1440,7 +1432,6 @@
       const user = DataCache.user(u);
       const displayName = user?.displayName || u;
 
-      // 1. Update games first
       const games = DataCache.games.filter(g => g.player1 === u || g.player2 === u);
       for (const g of games) {
         if (g.player1 === u) {
@@ -1454,7 +1445,6 @@
         await saveGame(g);
       }
 
-      // 2. Delete profile
       const { error } = await supabaseClient.from('profiles').delete().eq('username', u);
       if (error) { toast('Delete failed: ' + error.message, true); return; }
 
@@ -1485,6 +1475,61 @@
       await Actions.saveProfile();
     },
 
+    // --------------------------------------------------------------
+    // KHORNE ABILITY TOGGLE – updated with OR/AND logic
+    // --------------------------------------------------------------
+    toggleKhorneAbility: function(player, abilityId) {
+      const state = S.battle.khorne[player];
+      const ability = KHORNE_TREE[abilityId];
+      if (!ability) return;
+      const idx = state.unlocked.indexOf(abilityId);
+      if (idx > -1) {
+        // Check if any unlocked ability depends on this one (with OR/AND logic)
+        const depends = Object.values(KHORNE_TREE).some(a => {
+          if (!a.parents.includes(abilityId)) return false;
+          // if it's an OR parent, check if the ability would still be satisfied by other parents
+          if (a.parentType === 'or') {
+            const otherParents = a.parents.filter(p => p !== abilityId);
+            const satisfiedByOthers = otherParents.some(p => state.unlocked.includes(p));
+            if (!satisfiedByOthers && state.unlocked.includes(a.id)) return true;
+            return false;
+          } else {
+            // AND parent: if this ability is required and the other parents are also satisfied, it depends
+            const otherParents = a.parents.filter(p => p !== abilityId);
+            const allOthersSatisfied = otherParents.every(p => state.unlocked.includes(p));
+            if (allOthersSatisfied && state.unlocked.includes(a.id)) return true;
+            return false;
+          }
+        });
+        if (depends) {
+          toast('Cannot remove this ability because it is a prerequisite for another unlocked ability.', true);
+          return;
+        }
+        // Remove it
+        state.unlocked.splice(idx, 1);
+        state.points += ability.cost; // refund
+        toast('Removed ' + ability.name);
+      } else {
+        // Add
+        let hasParent = false;
+        if (ability.parents.length === 0) {
+          hasParent = true;
+        } else if (ability.parentType === 'or') {
+          hasParent = ability.parents.some(p => state.unlocked.includes(p));
+        } else {
+          hasParent = ability.parents.every(p => state.unlocked.includes(p));
+        }
+        if (!hasParent) { toast('Prerequisite not met.', true); return; }
+        if (state.points < ability.cost) { toast('Not enough Blood Tithe Points.', true); return; }
+        state.points -= ability.cost;
+        state.unlocked.push(abilityId);
+        toast('Unlocked ' + ability.name);
+      }
+      saveDraftDebounced();
+      renderPreservingScroll(true);
+    },
+
+    // Resume draft etc.
     resumeDraft: async function() {
       const draftData = loadDraft(S.auth.session.username);
       if (!draftData) return;
@@ -1510,7 +1555,6 @@
       b.isTTS = draft.isTTS || false;
       b.isTournament = draft.isTournament || false;
       b.khorne = draft.khorne || { p1: { points:0, unlocked:[] }, p2: { points:0, unlocked:[] } };
-      // Ensure Murderlust is unlocked if Khorne
       if (b.faction1 === 'Blades of Khorne' && b.khorne.p1.unlocked.indexOf('murderlust') === -1) {
         b.khorne.p1.unlocked.push('murderlust');
       }
@@ -1693,56 +1737,9 @@
       render(true);
     },
 
-    // Toggle Khorne ability (unlock/remove)
-    toggleKhorneAbility: function(player, abilityId) {
-      const state = S.battle.khorne[player];
-      const ability = KHORNE_TREE[abilityId];
-      if (!ability) return;
-      const idx = state.unlocked.indexOf(abilityId);
-      if (idx > -1) {
-        // Check if any other unlocked ability depends on this one
-        const dependsOn = Object.values(KHORNE_TREE).some(a =>
-          a.parents.includes(abilityId) && state.unlocked.includes(a.id)
-        );
-        if (dependsOn) {
-          toast('Cannot remove this ability because it is a prerequisite for another unlocked ability.', true);
-          return;
-        }
-        // Remove it
-        state.unlocked.splice(idx, 1);
-        state.points += ability.cost; // refund
-        toast('Removed ' + ability.name);
-      } else {
-        // Add
-        const hasParent = ability.parents.length === 0 || ability.parents.some(p => state.unlocked.includes(p));
-        if (!hasParent) { toast('Prerequisite not met.', true); return; }
-        if (state.points < ability.cost) { toast('Not enough Blood Tithe Points.', true); return; }
-        state.points -= ability.cost;
-        state.unlocked.push(abilityId);
-        toast('Unlocked ' + ability.name);
-      }
-      saveDraftDebounced();
-      renderPreservingScroll(true);
-    },
-
+    // LRL – removed, replaced with placeholder, but keep stub
     pickLuminethRune: function(player, runeKey) {
-      const rd = S.battle.rounds[S.battle.currentRound];
-      const key = player === 'p1' ? 'p1ft' : 'p2ft';
-      const active = rd[key] && rd[key].active ? rd[key].active : null;
-      const isRound1 = S.battle.currentRound === 0;
-      const state = S.battle.lumineth[player];
-      const extraRune = state.extraRune || false;
-      const extraUsed = state.extraUsed || false;
-      const allowSecond = isRound1 && extraRune && !extraUsed && active !== null;
-      if (active !== null && !allowSecond) { toast('Already picked a rune this round.', true); return; }
-      if (extraUsed && isRound1) { toast('Extra rune already used.', true); return; }
-      state.scripture[runeKey] = (state.scripture[runeKey] || 0) + 1;
-      if (!rd[key]) rd[key] = { active: runeKey };
-      else rd[key].active = runeKey;
-      if (allowSecond) state.extraUsed = true;
-      S.battle.rounds = [...S.battle.rounds];
-      saveDraftDebounced();
-      renderPreservingScroll(true);
+      toast('Lumineth tracker coming soon.', true);
     },
 
     toggleDOKBlessing: function(player, blessingKey) {
@@ -1819,8 +1816,13 @@
       toast('Exported ' + filename);
     }
   };
-  //  PART 2 
-    function migrateDraft(draft) {
+
+  // ------------------------------------------------------------------
+  // END OF PART 1 – split here
+  // ------------------------------------------------------------------
+  // Part 2 – Remaining helper functions, renderers, and init
+
+  function migrateDraft(draft) {
     if (draft.khorne && !draft.khorne.p1) {
       const old = draft.khorne;
       draft.khorne = { p1: { ...old }, p2: { ...old } };
@@ -1889,10 +1891,12 @@
     };
   }
 
-  //  RENDER FUNCTIONS 
+  // ------------------------------------------------------------------
+  // RENDER FUNCTIONS
+  // ------------------------------------------------------------------
 
   function renderLogin() {
-    const shared = '<div class="login-wrap"><div class="login-logo"><div style="font-size:40px;margin-bottom:8px"></div><div class="login-title">Age of Sigmar<br>Battle Tracker</div><div class="login-sub">"Warducks... Assemble"</div><div style="font-size:10px; color:var(--dim); margin-top:4px; opacity:0.7; letter-spacing:0.05em;">v0.9.9 – Supabase</div></div><div class="login-box">';
+    const shared = '<div class="login-wrap"><div class="login-logo"><div style="font-size:40px;margin-bottom:8px">⚔️</div><div class="login-title">Age of Sigmar<br>Battle Tracker</div><div class="login-sub">"Warducks... Assemble"</div><div style="font-size:10px; color:var(--dim); margin-top:4px; opacity:0.7; letter-spacing:0.05em;">v0.9.9 – Supabase</div></div><div class="login-box">';
     if (S.auth.loginMode === 'login') {
       return shared +
         UI.errorMessage(S.auth.loginError) +
@@ -1967,7 +1971,7 @@
         if (!t) { html += '<div class="tac-name" style="color:var(--dim)">Unknown</div>'; return; }
         const completed = progress[ti] !== undefined ? progress[ti] : -1;
         const thisTacticUsed = TacticManager.hasNewSubThisRound(player, ti, rk);
-        html += '<div class="tac-name">' + esc(t.name) + (thisTacticUsed ? ' ' : '') + '</div>';
+        html += '<div class="tac-name">' + esc(t.name) + (thisTacticUsed ? ' ✓' : '') + '</div>';
         t.subs.forEach((sub, si) => {
           let cls = 'tac-sub';
           let onclick = '';
@@ -2034,14 +2038,14 @@
   function renderRDP(player, data, tracker, gaCol) {
     const val = data.value || 0;
     const max = tracker.max || 9999;
-    return '<div class="ft-row"><span class="ft-label" style="color:' + gaCol + '"></span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjFTStepper(\'' + player + '\',-1,0,' + max + ')"></div><div class="game-track-val" id="ft-val-' + player + '" style="color:' + gaCol + ';width:28px;height:22px;font-size:12px">' + val + '</div><div class="game-track-btn" onclick="Actions.adjFTStepper(\'' + player + '\',1,0,' + max + ')">+</div></div></div>';
+    return '<div class="ft-row"><span class="ft-label" style="color:' + gaCol + '"></span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjFTStepper(\'' + player + '\',-1,0,' + max + ')">-</div><div class="game-track-val" id="ft-val-' + player + '" style="color:' + gaCol + ';width:28px;height:22px;font-size:12px">' + val + '</div><div class="game-track-btn" onclick="Actions.adjFTStepper(\'' + player + '\',1,0,' + max + ')">+</div></div></div>';
   }
 
   function renderBadMoon(player, data, gaCol) {
     const val = data.value || 0;
     let html = '<div class="ft-row"><span class="ft-label">Face</span><select id="ft-bm-' + player + '" class="tac-select" style="flex:1;min-width:60px;padding:2px 4px;font-size:10px;height:22px" onchange="Actions.setFTBadMoon(\'' + player + '\',this.value)">';
     CONFIG.BAD_MOON_FACES.forEach((f, i) => { html += '<option value="' + i + '" ' + (i === val ? 'selected' : '') + '>' + esc(f) + '</option>'; });
-    html += '</select><button class="ft-btn" onclick="Actions.advanceBadMoon(\'' + player + '\')" title="Advance to next face"></button></div><div class="bm-desc" id="ft-bm-desc-' + player + '">' + (CONFIG.BAD_MOON_DESCS[val] || '') + '</div>';
+    html += '</select><button class="ft-btn" onclick="Actions.advanceBadMoon(\'' + player + '\')" title="Advance to next face">→</button></div><div class="bm-desc" id="ft-bm-desc-' + player + '">' + (CONFIG.BAD_MOON_DESCS[val] || '') + '</div>';
     return html;
   }
 
@@ -2072,10 +2076,10 @@
   function renderSylvaneth(player, data, tracker, gaCol) {
     const val = data.value || 0;
     const max = tracker.max || 12;
-    return '<div class="ft-row"><span class="ft-label" style="color:' + gaCol + '"></span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjFTStepper(\'' + player + '\',-1,0,' + max + ')"></div><div class="game-track-val" id="ft-val-' + player + '" style="color:' + gaCol + ';width:28px;height:22px;font-size:12px">' + val + '</div><div class="game-track-btn" onclick="Actions.adjFTStepper(\'' + player + '\',1,0,' + max + ')">+</div></div><span style="font-size:8px;color:var(--dim);margin-left:3px">/' + max + '</span></div><div class="ft-row"><span class="ft-label">Creeping Overgrowth</span><span style="font-size:10px;color:var(--parchDim);" id="ft-range-' + player + '">' + getSylvanethRange(val) + '</span></div>';
+    return '<div class="ft-row"><span class="ft-label" style="color:' + gaCol + '"></span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjFTStepper(\'' + player + '\',-1,0,' + max + ')">-</div><div class="game-track-val" id="ft-val-' + player + '" style="color:' + gaCol + ';width:28px;height:22px;font-size:12px">' + val + '</div><div class="game-track-btn" onclick="Actions.adjFTStepper(\'' + player + '\',1,0,' + max + ')">+</div></div><span style="font-size:8px;color:var(--dim);margin-left:3px">/' + max + '</span></div><div class="ft-row"><span class="ft-label">Creeping Overgrowth</span><span style="font-size:10px;color:var(--parchDim);" id="ft-range-' + player + '">' + getSylvanethRange(val) + '</span></div>';
   }
 
-  // LUMINETH – temporarily replaced with "Coming Soon"
+  // LUMINETH – replaced with "Coming Soon"
   function renderLumineth(player, data, gaCol) {
     return '<div style="padding:8px; color:var(--parchDim); font-style:italic; text-align:center;">Coming Soon</div>';
   }
@@ -2088,8 +2092,8 @@
     const activeStep = data.step || 0;
     const isSelected = activeTrack !== null;
     const tracks = {
-      storm: { label: 'Storm', steps: ['Unpredictable Tide', 'Inexorable Tide', "Storm's Wrath"], descs: ['Teleport a unit not in combat', '1 Rend against IDONETH DEEPKIN units', 'Melee weapons have Crit (Mortal)'] },
-      sea: { label: 'Sea', steps: ['Concealing Tide', 'Swift Tide', "Sea's Embrace"], descs: ['1 hit for units that didn\'t CHARGE', 'Run and still Shoot/Charge', 'Strike-First'] }
+      storm: { label: 'Storm', steps: ['Unpredictable Tide', 'Inexorable Tide', "Storm's Wrath"], descs: ['Teleport a unit not in combat', '✦1 Rend against IDONETH DEEPKIN units', 'Melee weapons have Crit (Mortal)'] },
+      sea: { label: 'Sea', steps: ['Concealing Tide', 'Swift Tide', "Sea's Embrace"], descs: ['✦1 hit for units that didn\'t CHARGE', 'Run and still Shoot/Charge', 'Strike-First'] }
     };
     let html = '<div style="display:flex; gap:12px; justify-content:center;">';
     for (const [trackKey, trackData] of Object.entries(tracks)) {
@@ -2126,15 +2130,17 @@
     return html;
   }
 
-  // UPDATED Khorne renderer – unlocked abilities are clickable to toggle
+  // KHORNE – renderer
   function renderKhorne(player, gaCol) {
     const state = S.battle.khorne[player];
     let html = '<div class="khorne-tree">';
-    html += '<div class="ft-row" style="margin-bottom:6px;"><span class="ft-label" style="color:' + gaCol + ';min-width:60px;">Blood Tithe</span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjKhornePoints(\'' + player + '\',-1)"></div><div class="game-track-val" style="width:40px;color:' + gaCol + ';">' + state.points + '</div><div class="game-track-btn" onclick="Actions.adjKhornePoints(\'' + player + '\',1)">+</div></div></div>';
+    html += '<div class="ft-row" style="margin-bottom:6px;"><span class="ft-label" style="color:' + gaCol + ';min-width:60px;">Blood Tithe</span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjKhornePoints(\'' + player + '\',-1)">-</div><div class="game-track-val" style="width:40px;color:' + gaCol + ';">' + state.points + '</div><div class="game-track-btn" onclick="Actions.adjKhornePoints(\'' + player + '\',1)">+</div></div></div>';
     KHORNE_ORDER.forEach(id => {
       const ability = KHORNE_TREE[id];
       const isUnlocked = state.unlocked.includes(id);
-      const hasParent = ability.parents.length === 0 || ability.parents.some(p => state.unlocked.includes(p));
+      const hasParent = ability.parents.length === 0 ||
+        (ability.parentType === 'or' ? ability.parents.some(p => state.unlocked.includes(p)) :
+                                      ability.parents.every(p => state.unlocked.includes(p)));
       const canAfford = state.points >= ability.cost;
       const isAvailable = !isUnlocked && hasParent && canAfford;
       let cls = 'khorne-ability';
@@ -2176,7 +2182,7 @@
       case 'dirtytricks': html += renderDirtyTricks(player, data, gaCol); break;
       case 'delusions': html += renderDelusions(player, data, gaCol); break;
       case 'sylvaneth': html += renderSylvaneth(player, data, tracker, gaCol); break;
-      case 'lumineth': html += renderLumineth(player, data, gaCol); break; // Coming Soon
+      case 'lumineth': html += renderLumineth(player, data, gaCol); break;
       case 'tides': html += renderTides(player, data, gaCol); break;
       case 'khorne': html += renderKhorne(player, gaCol); break;
       case 'dok_simple': html += renderDOKSimple(player, gaCol); break;
@@ -2192,7 +2198,6 @@
     return renderLogConfirm();
   }
 
-  // UPDATED renderLogSetup – sort opponent list alphabetically, Guest at top
   function renderLogSetup() {
     if (S.auth.session) {
       const f = DataCache.user(S.auth.session.username);
@@ -2200,7 +2205,6 @@
     }
     const users = DataCache.users;
     const others = Object.values(users).filter(u => u.username !== S.auth.session.username && !u.isSuspended && u.username !== CONFIG.SPECIAL_USERS.ADMIN);
-    // Sort alphabetically by displayName or username
     others.sort((a, b) => (a.displayName || a.username).localeCompare(b.displayName || b.username));
     const scenarioDropdown = UI.scenarioDropdown('battle.scenario', S.battle.scenario);
     let oppSheet = '';
@@ -2221,7 +2225,7 @@
     const p1L = esc(S.auth.session.username);
     const p2L = esc(S.battle.opponent?.displayName || 'Opponent');
     return UI.sectionHeader('Log Battle', 'Set up your engagement') +
-      '<div class="user-banner"> ' + p1L + ' </div>' +
+      '<div class="user-banner">⚔️ ' + p1L + ' ⚔️</div>' +
       '<div class="user-banner-sub">Commander of ' + esc(S.battle.faction1 || 'an unsworn host') + '</div>' +
       '<div style="padding:0 16px; padding-bottom:40px;">' +
       (S.battle.setupError ? '<div class="err-msg">' + ic('alert', 16, 'var(--red)') + ' ' + esc(S.battle.setupError) + '</div>' : '') +
@@ -2302,7 +2306,6 @@
       '</div>';
   }
 
-  // UPDATED renderLanding – sort opponent list alphabetically, Guest at top
   function renderLanding() {
     const games = DataCache.games;
     const myGames = games.filter(g => g.player1 === S.auth.session.username || g.player2 === S.auth.session.username).slice(0, 3);
@@ -2386,7 +2389,6 @@
     if (S.landing.opponentSheetOpen) {
       const users = DataCache.users;
       const others = Object.values(users).filter(u => u.username !== S.auth.session.username && !u.isSuspended && u.username !== CONFIG.SPECIAL_USERS.ADMIN);
-      // Sort alphabetically
       others.sort((a, b) => (a.displayName || a.username).localeCompare(b.displayName || b.username));
       let oi = '';
       if (S.landing.guestOpen) {
@@ -2625,8 +2627,8 @@
     const so = [{ value: 'wins', label: 'Wins' }, { value: 'ratio', label: 'Win Ratio' }, { value: 'name', label: 'Name' }];
     const lbFilterChips = [{ value: 'all', label: 'All' }, { value: 'casual', label: 'Casual' }, { value: 'tournament', label: 'Tournament' }];
     const filterRow = '<div class="sort-row" style="justify-content:center;gap:6px;padding:4px 16px 8px">' + lbFilterChips.map(c => '<div class="sort-chip' + (S.ui.lbTournamentFilter === c.value ? ' on' : '') + '" onclick="Actions.setLbTournamentFilter(\'' + c.value + '\')">' + c.label + '</div>').join('') + '</div>';
-    const cards = lb.map((u, i) => '<div class="card" style="cursor:pointer;' + (i === 0 ? 'border-color:var(--gold)' : '') + '" onclick="Actions.openLBModal(' + i + ')"><div style="display:flex;align-items:center;gap:12px"><div style="font-size:' + (i === 0 ? '26' : '20') + 'px;width:38px;text-align:center">' + (i === 0 ? '' : '#' + (i+1)) + '</div><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-weight:bold;font-size:15px">' + esc(u.username) + '</span>' + UI.factionBadge(u.ga) + '</div><div style="font-size:12px;color:var(--dim);margin-top:2px">' + esc(u.fav || 'No faction recorded') + '</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:20px;font-weight:bold;color:var(--gold)">' + u.pct + '%</div><div style="font-size:11px;color:var(--dim)">' + u.wins + 'W ' + u.draws + 'D ' + u.losses + 'L</div></div></div></div>').join('');
-    const gc = gg.length ? '<div class="card" style="border-style:dashed;opacity:.8;cursor:pointer" onclick="Actions.openGuestModal()"><div style="display:flex;align-items:center;gap:12px"><div style="width:38px;text-align:center;font-size:22px"></div><div style="flex:1"><div style="font-weight:bold">Guest Players</div><div style="font-size:12px;color:var(--dim)">' + esc(gn.slice(0,3).join(', ') + (gn.length > 3 ? ' +' + (gn.length-3) + ' more' : '')) + '</div></div><div style="text-align:right"><div style="font-size:18px;font-weight:bold;color:var(--dim)">' + (gg.length && (gg.length - gd) > 0 ? Math.round(gw / (gg.length - gd) * 100) : 0) + '%</div><div style="font-size:11px;color:var(--dim)">' + gw + 'W ' + gd + 'D ' + (gg.length - gw - gd) + 'L</div></div></div></div>' : '';
+    const cards = lb.map((u, i) => '<div class="card" style="cursor:pointer;' + (i === 0 ? 'border-color:var(--gold)' : '') + '" onclick="Actions.openLBModal(' + i + ')"><div style="display:flex;align-items:center;gap:12px"><div style="font-size:' + (i === 0 ? '26' : '20') + 'px;width:38px;text-align:center">' + (i === 0 ? ic('trophy', 26) : '#' + (i+1)) + '</div><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-weight:bold;font-size:15px">' + esc(u.username) + '</span>' + UI.factionBadge(u.ga) + '</div><div style="font-size:12px;color:var(--dim);margin-top:2px">' + esc(u.fav || 'No faction recorded') + '</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:20px;font-weight:bold;color:var(--gold)">' + u.pct + '%</div><div style="font-size:11px;color:var(--dim)">' + u.wins + 'W ' + u.draws + 'D ' + u.losses + 'L</div></div></div></div>').join('');
+    const gc = gg.length ? '<div class="card" style="border-style:dashed;opacity:.8;cursor:pointer" onclick="Actions.openGuestModal()"><div style="display:flex;align-items:center;gap:12px"><div style="width:38px;text-align:center;font-size:22px">👤</div><div style="flex:1"><div style="font-weight:bold">Guest Players</div><div style="font-size:12px;color:var(--dim)">' + esc(gn.slice(0,3).join(', ') + (gn.length > 3 ? ' +' + (gn.length-3) + ' more' : '')) + '</div></div><div style="text-align:right"><div style="font-size:18px;font-weight:bold;color:var(--dim)">' + (gg.length && (gg.length - gd) > 0 ? Math.round(gw / (gg.length - gd) * 100) : 0) + '%</div><div style="font-size:11px;color:var(--dim)">' + gw + 'W ' + gd + 'D ' + (gg.length - gw - gd) + 'L</div></div></div></div>' : '';
     let md = '';
     if (S.ui.modal?.type === 'player') {
       const u = S.ui.modal.user;
@@ -2651,7 +2653,7 @@
     const draws = mg.filter(g => g.winner === 'draw').length;
     const fl = S.profile.factions.length ? S.profile.factions.slice(0,2).join(', ') + (S.profile.factions.length > 2 ? ' +' + (S.profile.factions.length-2) : '') : 'Select factions…';
     const aw = S.auth.session.isAdmin && !DataCache.user('admin')?.adminPasswordChanged;
-    return UI.sectionHeader('My Profile', S.auth.session.username) + (aw ? UI.warning('Default admin credentials active — change in Admin  My Account') : '') +
+    return UI.sectionHeader('My Profile', S.auth.session.username) + (aw ? UI.warning('Default admin credentials active — change in Admin › My Account') : '') +
       UI.card('Stats', [['Games', mg.length], ['Wins', wins], ['Draws', draws], ['Losses', mg.length - wins - draws], ['Win %', mg.length && (mg.length - draws) > 0 ? Math.round(wins / (mg.length - draws) * 100) + '%' : '—']].map(([l, v]) => UI.statRow(l, v)).join('')) +
       UI.card('Edit Profile', UI.formField('Display Name', UI.textInput('profile.name', { value: S.profile.name, oninput: 'S.profile.name=this.value' })) + UI.formField('Factions', '<button class="btn btn-o" onclick="Actions.openFactionPicker(\'prof\')">' + esc(fl) + '</button>') + '<button class="btn btn-g" onclick="Actions.saveProfile()">Save Changes</button>') +
       UI.card('Change Password', UI.formField('Current Password', UI.passwordInput('profile.curPw', { oninput: 'S.profile.curPw=this.value' })) + UI.formField('New Password', UI.passwordInput('profile.newPw', { oninput: 'S.profile.newPw=this.value' })) + UI.formField('Confirm New', UI.passwordInput('profile.conf', { oninput: 'S.profile.conf=this.value' })) + '<button class="btn btn-o" onclick="Actions.changePw()">' + ic('lock', 14) + ' Change Password</button>') +
@@ -2713,9 +2715,10 @@
     return '<div class="adm-head"><div style="display:flex;align-items:center;gap:10px">' + ic('crown', 20, '#a07830') + '<div class="adm-title">Grand Marshal\'s Chamber</div></div><div style="font-size:12px;color:var(--gold2);margin-top:3px;font-style:italic">Administrative Access</div></div>' + UI.tabRow(tabs, S.admin.tab, 'Actions.setAdminTab') + ct + UI.spacer();
   }
 
-  //  INIT 
+  // ------------------------------------------------------------------
+  // INIT
+  // ------------------------------------------------------------------
   async function loadAllData() {
-    // 1. Load all profiles
     const { data: profiles, error: profilesError } = await supabaseClient
       .from('profiles')
       .select('*');
@@ -2735,7 +2738,6 @@
       };
     });
 
-    // 2. Load ALL games (not just the loggedin user’s)
     const { data: allGames, error: gamesError } = await supabaseClient
       .from('games')
       .select('*');
@@ -2778,13 +2780,12 @@
       }
       await loadAllData();
 
-      //  LOAD DRAFT EARLY (synchronous) 
       if (S.auth.session) {
         const draft = loadDraft(S.auth.session.username);
         S.ui.draftData = draft || null;
         S.ui.draftExists = !!draft;
         if (draft) {
-          toast(' Unfinished battle found – resume from Home');
+          toast('⚔️ Unfinished battle found – resume from Home');
         }
       } else {
         S.ui.draftData = null;
