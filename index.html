@@ -4,8 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
   <title>AoS Battle Tracker – Supabase</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E%3C/text%3E%3C/svg%3E">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230a0a0a'/%3E%3Ctext y='80' font-size='80'%3E%3C/text%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230a0a0a'/%3E%3Ctext y='80' font-size='80'%3E%3C/text%3E%3C/svg%3E">
   <style>
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
     :root{
@@ -105,7 +105,7 @@
     .tactic-item.locked{opacity:.4;cursor:not-allowed}
     .tactic-item .tac-dot{width:16px;height:16px;border-radius:50%;flex-shrink:0;border:2px solid var(--bdr);display:flex;align-items:center;justify-content:center}
     .tactic-item.done .tac-dot{background:var(--gold);border-color:var(--gold)}
-    .tactic-item.done .tac-dot::after{content:'';color:#0a0a0a;font-size:10px;font-weight:bold}
+    .tactic-item.done .tac-dot::after{content:'';color:#0a0a0a;font-size:10px;font-weight:bold}
     .tactic-item.current .tac-dot{border-color:var(--gold)}
     .tactic-item.locked .tac-dot{border-color:var(--dim)}
     .tactic-item .tac-plus{font-size:10px;color:var(--gold);font-weight:bold;margin-left:auto;flex-shrink:0}
@@ -135,7 +135,7 @@
     .gscore{font-size:22px;color:var(--gold);font-weight:bold}
     .faction-check{width:20px;height:20px;border:2px solid var(--bdr);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .faction-check.checked{background:var(--gold);border-color:var(--gold)}
-    .faction-check.checked::after{content:'';color:#0a0a0a;font-size:13px;font-weight:bold}
+    .faction-check.checked::after{content:'';color:#0a0a0a;font-size:13px;font-weight:bold}
     .pw-toggle{position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--dim);background:none;border:none;padding:4px;z-index:5}
     .pw-toggle:hover{color:var(--gold)}
     .sort-row{display:flex;gap:8px;padding:8px 16px;flex-wrap:wrap;justify-content:center}
@@ -165,7 +165,7 @@
     .tactic-card .tac-sub.locked{opacity:.4}
     .tactic-card .tac-sub .tac-dot-sm{width:12px;height:12px;border-radius:50%;flex-shrink:0;border:2px solid var(--bdr);display:inline-flex;align-items:center;justify-content:center}
     .tactic-card .tac-sub.done .tac-dot-sm{background:var(--gold);border-color:var(--gold)}
-    .tactic-card .tac-sub.done .tac-dot-sm::after{content:'';color:#0a0a0a;font-size:8px;font-weight:bold}
+    .tactic-card .tac-sub.done .tac-dot-sm::after{content:'';color:#0a0a0a;font-size:8px;font-weight:bold}
     .tactic-card .tac-sub.current .tac-dot-sm{border-color:var(--gold)}
     .tactic-card .tac-sub.locked .tac-dot-sm{border-color:var(--dim)}
     .tactic-card .tac-sub .tac-plus-sm{font-size:9px;color:var(--gold);font-weight:bold;margin-left:auto;flex-shrink:0}
@@ -286,7 +286,6 @@
     }
   };
 
-  // KHORNE TREE – corrected costs and OR/AND logic
   const KHORNE_TREE = {
     murderlust: { id: 'murderlust', name: 'Murderlust', cost: 0, parents: [], parentType: 'none', desc: 'Roll extra charge die, suffer D3 mortals' },
     divine_scorn: { id: 'divine_scorn', name: 'Divine Scorn', cost: 1, parents: ['murderlust'], parentType: 'and', desc: 'Weakens wizards/priests near Khorne units' },
@@ -344,7 +343,7 @@
   function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
   function toast(m,e){const w=document.getElementById('toast-wrap');if(!w)return;const d=document.createElement('div');d.className='toast'+(e?' err':'');d.textContent=m;w.appendChild(d);setTimeout(()=>{d.style.opacity='0';d.style.transition='opacity .3s';setTimeout(()=>d.remove(),300);},3000);}
 
-  const UI={sectionHeader(t,s){return`<div class="sh"><div class="st">${esc(t)}</div>${s?`<div class="ss">${esc(s)}</div>`:''}</div>`;},card(t,c){return`<div class="card"><div class="ct">${esc(t)}</div>${c}</div>`;},errorMessage(m){return m?`<div class="err-msg">${ic('alert',16,'var(--red)')} ${esc(m)}</div>`:'';},warning(m,a){return`<div class="warn">${ic('warn',16)} ${m}${a||''}</div>`;},statRow(l,v){return`<div class="sr"><span class="sl">${esc(l)}</span><span class="sv">${esc(String(v))}</span></div>`;},factionBadge(ga){if(!ga)return'';const c=gaColor(ga);return`<span class="badge" style="background:${c}22;color:${c};border:1px solid ${c}44;font-size:9px">${esc(ga)}</span>`;},chips(items,cur){return`<div class="chips">${items.map(i=>`<div class="chip${cur===i.value?' on':''}${i.disabled?' disabled':''}" onclick="${i.disabled?'':i.onclick}">${esc(i.label)}</div>`).join('')}</div>`;},sortChips(items,cur,pre){return`<div class="sort-row">${items.map(i=>`<div class="sort-chip${cur===i.value?' on':''}" onclick="${pre}('${i.value}')">${esc(i.label)}</div>`).join('')}</div>`;},tabRow(tabs,cur,pre){return`<div class="htabs">${tabs.map((t,i)=>`<div class="htab${cur===i?' on':''}" onclick="${pre}(${i})">${esc(t)}</div>`).join('')}</div>`;},formField(l,i){return`<div class="field"><label class="lbl">${esc(l)}</label>${i}</div>`;},textInput: function(bind, o = {}) {
+  const UI={sectionHeader(t,s){return`<div class="sh"><div class="st">${esc(t)}</div>${s?`<div class="ss">${esc(s)}</div>`:''}</div>`;},card(t,c){return`<div class="card"><div class="ct">${esc(t)}</div>${c}</div>`;},errorMessage(m){return m?`<div class="err-msg">${ic('alert',16,'var(--red)')} ${esc(m)}</div>`:'';},warning(m,a){return`<div class="warn">${ic('warn',16)} ${m}${a||''}</div>`;},statRow(l,v){return`<div class="sr"><span class="sl">${esc(l)}</span><span class="sv">${esc(String(v))}</span></div>`;},factionBadge(ga){if(!ga)return'';const c=gaColor(ga);return`<span class="badge" style="background:${c}22;color:${c};border:1px solid ${c}44;font-size:9px">${esc(ga)}</span>`;},chips(items,cur){return`<div class="chips">${items.map(i=>`<div class="chip${cur===i.value?' on':''}${i.disabled?' disabled':''}" onclick="${i.disabled?'':i.onclick}">${esc(i.label)}</div>`).join('')}</div>`;},sortChips(items,cur,pre){return`<div class="sort-row">${items.map(i=>`<div class="sort-chip${cur===i.value?' on':''}" onclick="${pre}('${i.value}')">${esc(i.label)}</div>`).join('')}</div>`;},tabRow(tabs,cur,pre){return`<div class="htabs">${tabs.map((t,i)=>`<div class="htab${cur===i? ' on':''}" onclick="${pre}(${i})">${esc(t)}</div>`).join('')}</div>`;},formField(l,i){return`<div class="field"><label class="lbl">${esc(l)}</label>${i}</div>`;},textInput: function(bind, o = {}) {
   const { type = 'text', placeholder = '', enterAction = '', value = '', oninput = '' } = o;
   return `<input class="inp" data-bind="${bind}" type="${type}" placeholder="${esc(placeholder)}" value="${esc(value)}" ${enterAction ? `data-enter="${enterAction}"` : ''} ${oninput ? `oninput="${oninput}"` : ''} autocomplete="off">`;
 },passwordInput: function(bind, o = {}) {
@@ -487,7 +486,7 @@
     auth: { session: null, loginUser: '', loginPw: '', loginError: '', loginMode: 'login' },
     register: { user: '', pw: '', conf: '', factions: [], error: '' },
     nav: { tab: 0, currentScreen: 'login' },
-    landing: { manualOpen: false, manualVP1: '', manualVP2: '', manualWinner: '', manualNotes: '', manualF1: '', manualF2: '', manualOpp: '', manualScen: '', manualTTS: false, manualTournament: false, opponentSheetOpen: false, guestOpen: false, guestInput: '', manualP1Tactics: [-1,-1], manualP2Tactics: [-1,-1] },
+    landing: { manualOpen: false, manualVP1: '', manualVP2: '', manualWinner: '', manualNotes: '', manualF1: '', manualF2: '', manualOpp: '', manualOppUsername: '', manualScen: '', manualTTS: false, manualTournament: false, opponentSheetOpen: false, guestOpen: false, guestInput: '', manualP1Tactics: [-1,-1], manualP2Tactics: [-1,-1] },
     battle: {
       step: 0, opponent: null, faction1: '', faction2: '', scenario: '', rounds: [], currentRound: 0, winner: null, notes: '',
       opponentSheetOpen: false, guestOpen: false, guestInput: '',
@@ -696,6 +695,7 @@
       S.landing.manualF1 = S.battle.faction1 || '';
       S.landing.manualF2 = '';
       S.landing.manualOpp = '';
+      S.landing.manualOppUsername = '';
       S.landing.manualScen = '';
       S.landing.manualTTS = false;
       S.landing.manualTournament = false;
@@ -706,68 +706,82 @@
     closeManualEntry: function() { S.landing.manualOpen = false; render(true); },
 
     saveManualGame: async function() {
-      const vp1 = parseInt(getInputValue('landing.manualVP1') || S.landing.manualVP1) || 0;
-      const vp2 = parseInt(getInputValue('landing.manualVP2') || S.landing.manualVP2) || 0;
-      const winner = getInputValue('landing.manualWinner') || S.landing.manualWinner;
-      const oppName = getInputValue('landing.manualOpp') || S.landing.manualOpp || 'Guest Player';
-      const scenario = getInputValue('landing.manualScen') || S.landing.manualScen;
-      const notes = getInputValue('landing.manualNotes') || S.landing.manualNotes;
-      const f1 = getInputValue('landing.manualF1') || S.landing.manualF1 || 'Unknown';
-      const f2 = getInputValue('landing.manualF2') || S.landing.manualF2 || 'Unknown';
-      const tts = S.landing.manualTTS;
-      const tourn = S.landing.manualTournament;
-      if (!winner) { toast('Select a winner.', true); return; }
-      const key = 'g' + Date.now();
-      const oppUser = CONFIG.SPECIAL_USERS.GUEST;
-      let winnerVal;
-      if (winner === 'draw') winnerVal = 'draw';
-      else winnerVal = winner === S.auth.session.username ? S.auth.session.username : oppUser;
-      const p1Tactics = S.landing.manualP1Tactics.filter(t => t >= 0).map(t => CONFIG.BATTLE_TACTICS[t].name);
-      const p2Tactics = S.landing.manualP2Tactics.filter(t => t >= 0).map(t => CONFIG.BATTLE_TACTICS[t].name);
-      const game = {
-        id: key,
-        date: new Date().toISOString().slice(0,10),
-        player1: S.auth.session.username,
-        player2: oppUser,
-        faction1: f1,
-        faction2: f2,
-        grandAlliance1: gaFor(f1),
-        grandAlliance2: gaFor(f2),
-        rounds: [],
-        totalVP1: vp1,
-        totalVP2: vp2,
-        winner: winnerVal,
-        scenario: scenario,
-        notes: notes,
-        loggedBy: S.auth.session.username,
-        isSample: false,
-        guestName: oppName,
-        manuallyEntered: true,
-        isTTS: tts,
-        isTournament: tourn || false,
-        displayName1: S.auth.session.displayName || S.auth.session.username,
-        displayName2: oppName,
-        p1TacticsUsed: p1Tactics,
-        p2TacticsUsed: p2Tactics
-      };
-      await saveGame(game);
-      await loadAllData();
-      const user = DataCache.user(S.auth.session.username);
-      if (user) {
-        S.auth.session.gamesPlayed = user.gamesPlayed;
-        S.auth.session.wins = user.wins;
-        S.auth.session.draws = user.draws;
+      try {
+        const vp1 = parseInt(getInputValue('landing.manualVP1') || S.landing.manualVP1) || 0;
+        const vp2 = parseInt(getInputValue('landing.manualVP2') || S.landing.manualVP2) || 0;
+        const winner = getInputValue('landing.manualWinner') || S.landing.manualWinner;
+        const oppName = S.landing.manualOpp || 'Guest Player';
+        const oppUsername = S.landing.manualOppUsername || CONFIG.SPECIAL_USERS.GUEST;
+        const scenario = getInputValue('landing.manualScen') || S.landing.manualScen;
+        const notes = getInputValue('landing.manualNotes') || S.landing.manualNotes;
+        const f1 = getInputValue('landing.manualF1') || S.landing.manualF1 || 'Unknown';
+        const f2 = getInputValue('landing.manualF2') || S.landing.manualF2 || 'Unknown';
+        const tts = S.landing.manualTTS;
+        const tourn = S.landing.manualTournament;
+
+        if (!winner) { toast('Select a winner.', true); return; }
+
+        const key = 'g' + Date.now();
+        let winnerVal;
+        if (winner === 'draw') winnerVal = 'draw';
+        else if (winner === S.auth.session.username) winnerVal = S.auth.session.username;
+        else winnerVal = oppUsername;
+
+        const p1Tactics = S.landing.manualP1Tactics.filter(t => t >= 0).map(t => CONFIG.BATTLE_TACTICS[t].name);
+        const p2Tactics = S.landing.manualP2Tactics.filter(t => t >= 0).map(t => CONFIG.BATTLE_TACTICS[t].name);
+
+        const game = {
+          id: key,
+          date: new Date().toISOString().slice(0,10),
+          player1: S.auth.session.username,
+          player2: oppUsername,
+          faction1: f1,
+          faction2: f2,
+          grandalliance1: gaFor(f1),
+          grandalliance2: gaFor(f2),
+          rounds: [],
+          totalvp1: vp1,
+          totalvp2: vp2,
+          winner: winnerVal,
+          scenario: scenario,
+          notes: notes,
+          loggedby: S.auth.session.username,
+          issample: false,
+          guestname: oppUsername === CONFIG.SPECIAL_USERS.GUEST ? oppName : null,
+          manuallyentered: true,
+          istts: tts,
+          istournament: tourn || false,
+          displayname1: S.auth.session.displayName || S.auth.session.username,
+          displayname2: oppName,
+          p1tacticsused: p1Tactics,
+          p2tacticsused: p2Tactics
+        };
+
+        const result = await saveGame(game);
+        if (!result) { toast('Save failed: no data returned.', true); return; }
+
+        await loadAllData();
+        const user = DataCache.user(S.auth.session.username);
+        if (user) {
+          S.auth.session.gamesPlayed = user.gamesPlayed;
+          S.auth.session.wins = user.wins;
+          S.auth.session.draws = user.draws;
+        }
+
+        toast('Game recorded!');
+        S.landing.manualOpen = false;
+        render(true);
+      } catch (err) {
+        console.error('Manual save failed:', err);
+        toast('Save failed: ' + (err.message || err), true);
       }
-      toast('Game recorded!');
-      S.landing.manualOpen = false;
-      render(true);
     },
 
     openManualOpponentSheet: function() { S.landing.opponentSheetOpen = true; S.landing.guestOpen = false; render(true); },
     closeManualOpponentSheet: function() { S.landing.opponentSheetOpen = false; S.landing.guestOpen = false; render(true); },
-    selectManualOpponent: function(username, displayName) { S.landing.manualOpp = displayName || username; S.landing.opponentSheetOpen = false; S.landing.guestOpen = false; render(true); },
+    selectManualOpponent: function(username, displayName) { S.landing.manualOpp = displayName || username; S.landing.manualOppUsername = username; S.landing.opponentSheetOpen = false; S.landing.guestOpen = false; render(true); },
     openManualGuestInput: function() { S.landing.guestOpen = true; render(true); },
-    confirmManualGuest: function() { const n = S.landing.guestInput.trim() || 'Guest Player'; S.landing.manualOpp = n; S.landing.opponentSheetOpen = false; S.landing.guestOpen = false; S.landing.guestInput = ''; render(true); },
+    confirmManualGuest: function() { const n = S.landing.guestInput.trim() || 'Guest Player'; S.landing.manualOpp = n; S.landing.manualOppUsername = CONFIG.SPECIAL_USERS.GUEST; S.landing.opponentSheetOpen = false; S.landing.guestOpen = false; S.landing.guestInput = ''; render(true); },
     cancelManualGuest: function() { S.landing.guestOpen = false; S.landing.guestInput = ''; render(true); },
 
     openFactionPicker: function(ctx) {
@@ -1145,7 +1159,7 @@
 
     declareVictor: function(u) { S.battle.winner = u; saveDraftDebounced(); render(true); },
 
-    backToScore: function() { S.battle.step = 1; saveDraftDebounced(); render(true); },
+    backToScore: function() { S.battle.step = 1; S.battle.winner = null; saveDraftDebounced(); render(true); },
 
     saveGame: async function() {
       if (S.ui.saving) return;
@@ -1159,6 +1173,10 @@
         return;
       }
       try {
+        // Pick up notes from the textarea in case state wasn't updated
+        const notesEl = document.querySelector('[data-bind="battle.notes"]');
+        if (notesEl) S.battle.notes = notesEl.value;
+
         const key = 'g' + Date.now();
         const rounds = S.battle.rounds.slice(0, S.battle.currentRound + 1);
         const vp1 = rounds.reduce((s, x) => s + (x.vp1 || 0), 0);
@@ -1475,26 +1493,20 @@
       await Actions.saveProfile();
     },
 
-    // --------------------------------------------------------------
-    // KHORNE ABILITY TOGGLE – updated with OR/AND logic
-    // --------------------------------------------------------------
     toggleKhorneAbility: function(player, abilityId) {
       const state = S.battle.khorne[player];
       const ability = KHORNE_TREE[abilityId];
       if (!ability) return;
       const idx = state.unlocked.indexOf(abilityId);
       if (idx > -1) {
-        // Check if any unlocked ability depends on this one (with OR/AND logic)
         const depends = Object.values(KHORNE_TREE).some(a => {
           if (!a.parents.includes(abilityId)) return false;
-          // if it's an OR parent, check if the ability would still be satisfied by other parents
           if (a.parentType === 'or') {
             const otherParents = a.parents.filter(p => p !== abilityId);
             const satisfiedByOthers = otherParents.some(p => state.unlocked.includes(p));
             if (!satisfiedByOthers && state.unlocked.includes(a.id)) return true;
             return false;
           } else {
-            // AND parent: if this ability is required and the other parents are also satisfied, it depends
             const otherParents = a.parents.filter(p => p !== abilityId);
             const allOthersSatisfied = otherParents.every(p => state.unlocked.includes(p));
             if (allOthersSatisfied && state.unlocked.includes(a.id)) return true;
@@ -1505,12 +1517,10 @@
           toast('Cannot remove this ability because it is a prerequisite for another unlocked ability.', true);
           return;
         }
-        // Remove it
         state.unlocked.splice(idx, 1);
-        state.points += ability.cost; // refund
+        state.points += ability.cost;
         toast('Removed ' + ability.name);
       } else {
-        // Add
         let hasParent = false;
         if (ability.parents.length === 0) {
           hasParent = true;
@@ -1529,7 +1539,6 @@
       renderPreservingScroll(true);
     },
 
-    // Resume draft etc.
     resumeDraft: async function() {
       const draftData = loadDraft(S.auth.session.username);
       if (!draftData) return;
@@ -1737,7 +1746,6 @@
       render(true);
     },
 
-    // LRL – removed, replaced with placeholder, but keep stub
     pickLuminethRune: function(player, runeKey) {
       toast('Lumineth tracker coming soon.', true);
     },
@@ -1818,9 +1826,9 @@
   };
 
   // ------------------------------------------------------------------
-  // END OF PART 1 – split here
+  // END OF PART 1 – CONTINUE IMMEDIATELY WITH PART 2
   // ------------------------------------------------------------------
-  // Part 2 – Remaining helper functions, renderers, and init
+    // Part 2 – Remaining helper functions, renderers, and init
 
   function migrateDraft(draft) {
     if (draft.khorne && !draft.khorne.p1) {
@@ -1910,7 +1918,7 @@
       const fLabel = S.register.factions.length ? S.register.factions.slice(0,2).join(', ') + (S.register.factions.length > 2 ? ' +' + (S.register.factions.length-2) : '') : 'Choose Factions (optional)';
       return shared +
         UI.errorMessage(S.register.error) +
-        UI.formField('Username', UI.textInput('register.user', { placeholder: 'your_username', value: S.register.user, oninput: 'S.register.user=this.value' })) +
+        UI.formField('Username', UI.textInput('register.user', { placeholder: 'your_username', value: S.register.user, oninput: 'S.register.user=this.value' }) + '<div style="font-size:11px;color:var(--parchDim);font-style:italic;margin-top:6px;line-height:1.4;">Please enter a username without spaces or special characters.</div>') +
         UI.formField('Password', UI.passwordInput('register.pw', { placeholder: '••••••••', value: S.register.pw, oninput: 'S.register.pw=this.value' })) +
         UI.formField('Confirm Password', UI.passwordInput('register.conf', { placeholder: '••••••••', enterAction: 'Actions.register', value: S.register.conf, oninput: 'S.register.conf=this.value' })) +
         UI.formField('Your Factions', '<button class="btn btn-o" onclick="Actions.openFactionPicker(\'reg\')">' + esc(fLabel) + '</button>') +
@@ -2079,7 +2087,6 @@
     return '<div class="ft-row"><span class="ft-label" style="color:' + gaCol + '"></span><div class="game-track-stepper"><div class="game-track-btn" onclick="Actions.adjFTStepper(\'' + player + '\',-1,0,' + max + ')">-</div><div class="game-track-val" id="ft-val-' + player + '" style="color:' + gaCol + ';width:28px;height:22px;font-size:12px">' + val + '</div><div class="game-track-btn" onclick="Actions.adjFTStepper(\'' + player + '\',1,0,' + max + ')">+</div></div><span style="font-size:8px;color:var(--dim);margin-left:3px">/' + max + '</span></div><div class="ft-row"><span class="ft-label">Creeping Overgrowth</span><span style="font-size:10px;color:var(--parchDim);" id="ft-range-' + player + '">' + getSylvanethRange(val) + '</span></div>';
   }
 
-  // LUMINETH – replaced with "Coming Soon"
   function renderLumineth(player, data, gaCol) {
     return '<div style="padding:8px; color:var(--parchDim); font-style:italic; text-align:center;">Coming Soon</div>';
   }
@@ -2130,7 +2137,6 @@
     return html;
   }
 
-  // KHORNE – renderer
   function renderKhorne(player, gaCol) {
     const state = S.battle.khorne[player];
     let html = '<div class="khorne-tree">';
@@ -2296,7 +2302,8 @@
     const w1 = S.battle.winner === S.auth.session.username;
     const w2 = S.battle.winner === S.battle.opponent?.username;
     const wDraw = S.battle.winner === 'draw';
-    return UI.sectionHeader('Battle Concluded') + 
+    return '<div style="padding:8px 16px 0"><button class="btn btn-o btn-sm" style="width:auto;padding:8px 14px" onclick="Actions.backToScore()">' + ic('chevleft', 14) + ' Back to Score</button></div>' +
+      UI.sectionHeader('Battle Concluded') + 
       UI.card('Final Score', '<div style="display:flex;justify-content:center;align-items:center;gap:20px;padding:12px 0"><div style="text-align:center"><div style="font-size:13px;font-weight:bold">' + esc(S.auth.session.username) + '</div><div class="score-total" style="font-size:44px">' + vp1 + '</div></div><div style="color:var(--dim);font-weight:bold">VS</div><div style="text-align:center"><div style="font-size:13px;font-weight:bold">' + esc(S.battle.opponent ? S.battle.opponent.displayName : 'Opponent') + '</div><div class="score-total" style="font-size:44px">' + vp2 + '</div></div></div>') + 
       UI.card('Declare Victor', '<div class="btn-row"><button class="btn ' + (w1 ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'' + esc(S.auth.session.username) + '\')">' + ic('trophy', 15) + ' ' + esc(S.auth.session.username) + '</button><button class="btn ' + (w2 ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'' + esc(S.battle.opponent ? S.battle.opponent.username : '') + '\')">' + ic('trophy', 15) + ' ' + esc(S.battle.opponent ? S.battle.opponent.displayName : 'Opponent') + '</button><button class="btn ' + (wDraw ? 'btn-g' : 'btn-o') + '" onclick="Actions.declareVictor(\'draw\')">' + ic('trophy', 15) + ' Draw</button></div>') + 
       '<div style="padding:0 16px">' + 
@@ -2308,7 +2315,10 @@
 
   function renderLanding() {
     const games = DataCache.games;
-    const myGames = games.filter(g => g.player1 === S.auth.session.username || g.player2 === S.auth.session.username).slice(0, 3);
+    const myGames = games
+      .filter(g => g.player1 === S.auth.session.username || g.player2 === S.auth.session.username)
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+      .slice(0, 3);
     let recentHTML = '';
     if (myGames.length === 0) { recentHTML = UI.emptyState('No battles recorded yet.'); }
     else {
@@ -2378,7 +2388,7 @@
         '<div style="margin-top:10px;border-top:1px solid var(--bdr);padding-top:10px;"><div style="font-size:11px;color:var(--parch);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">Opponent\'s Battle Tactics (optional)</div><div style="display:flex;flex-direction:column;gap:8px;">' + renderTacticSelect('p2', 0, true) + renderTacticSelect('p2', 1, true) + '</div></div>' +
         UI.formField('Your VP', UI.textInput('landing.manualVP1', { value: S.landing.manualVP1, placeholder: 'Your score' })) +
         UI.formField('Opponent VP', UI.textInput('landing.manualVP2', { value: S.landing.manualVP2, placeholder: 'Opponent score' })) +
-        UI.formField('Winner', '<select class="tac-select" onchange="S.landing.manualWinner=this.value"><option value="">Select winner</option><option value="' + esc(S.auth.session.username) + '">You</option><option value="' + esc(S.landing.manualOpp || 'Opponent') + '">Opponent</option><option value="draw">Draw</option></select>') +
+        UI.formField('Winner', '<select class="tac-select" onchange="S.landing.manualWinner=this.value"><option value="">Select winner</option><option value="' + esc(S.auth.session.username) + '">You</option><option value="__opponent__">Opponent</option><option value="draw">Draw</option></select>') +
         '<div class="check-row"><label><input type="checkbox" ' + (S.landing.manualTTS ? 'checked' : '') + ' onchange="S.landing.manualTTS=this.checked"> TTS Game</label></div>' +
         '<div class="check-row"><label><input type="checkbox" ' + (S.landing.manualTournament ? 'checked' : '') + ' onchange="S.landing.manualTournament=this.checked"> Tournament Game</label></div>' +
         UI.formField('Notes', UI.textInput('landing.manualNotes', { value: S.landing.manualNotes, placeholder: 'Optional notes' })) +
